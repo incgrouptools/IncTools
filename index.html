@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Faction Overview</title>
+  <meta name="robots" content="noindex">
   <style>
     :root{
       --bg:#0b1020; --panel:#111731; --muted:#8a93ad; --text:#e7ecff; --accent:#7aa2ff;
@@ -12,30 +13,481 @@
     *{box-sizing:border-box}
     body{margin:0;min-height:100dvh;position:relative;background:linear-gradient(120deg,#0a0f20,#0e1430);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
     .container{max-width:900px;margin:28px auto;padding:0 16px}
-    /* keep styles unchanged ... */
+
+    header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    #tagImg{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#0b1020;display:none}
+    header h1{font-size:20px;margin:0}
+
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .panel h2{margin:0;padding:12px;border-bottom:1px solid var(--border);font-size:14px;color:var(--muted);background:rgba(0,0,0,.12)}
+    .pad{padding:14px}
+
+    .pretty-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .stat{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:12px}
+    .label{font-size:12px;color:var(--muted);letter-spacing:.2px}
+    .value{font-size:20px;margin-top:2px;word-break:break-word}
+
+    .note{margin-top:10px;color:var(--muted);font-size:12px}
+    .hidden{display:none!important}
+    .table-wrap{border:1px solid var(--border);border-radius:12px;overflow:visible}
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
+    th{background:rgba(0,0,0,.12);position:sticky;top:0}
+    .panel{margin-bottom:24px}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+    .controls input{background:#0f1530;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:10px;outline:none}
+    .btn{appearance:none;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn:hover{border-color:#2a3361}
+    .controls .keywrap{display:flex;align-items:center;gap:6px}
+
+    /* Login + loader overlays */
+    .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,16,32,.82);backdrop-filter:blur(4px);z-index:1000;overflow:hidden}
+    .gate .login{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;width:min(560px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .login h2{margin:0 0 10px;font-size:18px;color:var(--muted)}
+    .login .row{display:flex;gap:8px;align-items:center}
+    .login .row input{flex:1;background:#0f1530;color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:10px}
+    .login .row .btn{flex:0 0 auto}
+    .loading{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,16,32,.82);backdrop-filter:blur(4px);z-index:999;overflow:hidden}
+    .loading .spinner{width:64px;height:64px;border-radius:50%;background:conic-gradient(from 0deg, var(--accent), transparent 60%);-webkit-mask:radial-gradient(closest-side, transparent 68%, black 69%);mask:radial-gradient(closest-side, transparent 68%, black 69%);animation:spin 1s linear infinite}
+    .loading .loadtext{margin-top:12px;font-size:13px;color:var(--muted);text-align:center}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Animated aurora background behind everything */
+    body::before{content:"";position:fixed;inset:-40% -40%;background:
+      radial-gradient(40% 35% at 20% 30%, rgba(122,162,255,.35), transparent 60%),
+      radial-gradient(35% 30% at 80% 20%, rgba(61,220,151,.30), transparent 60%),
+      radial-gradient(50% 40% at 50% 80%, rgba(255,107,107,.25), transparent 60%);
+      filter: blur(60px) saturate(120%);
+      animation: aurora 16s linear infinite;
+      opacity:.9; z-index:-1; pointer-events:none;
+    }
+    .loading .spinner,.loading .loadtext{position:relative;z-index:1}
+    @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
   </style>
   <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
-  <h1>Faction Overview</h1>
-  <p>This is your new homepage deployed on Netlify.</p>
+  <!-- Account login (Netlify Identity) -->
+  <div id="accountGate" class="gate">
+    <div class="login">
+      <h2>Account Login</h2>
+      <div id="idBtns" class="row">
+        <button class="btn" id="idLogin" type="button">Sign in</button>
+        <button class="btn" id="idSignup" type="button">Create account</button>
+      </div>
+      <div id="codeFallback" class="row hidden">
+        <input id="accessCode" type="password" placeholder="Access code"/>
+        <button class="btn" id="accessEnter" type="button">Enter</button>
+      </div>
+      <p class="note" id="gateNote">Use Netlify Identity to sign in.</p>
+    </div>
+  </div>
+
+  <!-- API key gate -->
+  <div id="gate" class="gate hidden">
+    <div class="login">
+      <h2>Enter API Key</h2>
+      <div class="row">
+        <input id="gateKey" type="password" placeholder="Enter Torn API key"/>
+        <button class="btn" id="gateToggle" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
+        <button class="btn" id="gateEnter" type="button">Enter</button>
+      </div>
+      <p class="note">Your key is stored locally only.</p>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <div class="loadtext">Decrypting faction intel…</div>
+  </div>
+
+  <!-- App container -->
+  <div class="container hidden">
+    <header>
+      <img id="tagImg" alt="Faction tag" />
+      <h1 id="title">Faction Overview</h1>
+    </header>
+
+    <div id="userBar" class="note" style="text-align:right; margin:-4px 0 8px 0; display:none;">
+      Signed in as <span id="userEmail"></span> · <button class="btn" id="logoutBtn" type="button">Logout</button>
+    </div>
+
+    <div class="controls">
+      <label class="label" for="apiKey">API key</label>
+      <span class="keywrap">
+        <input id="apiKey" type="password" placeholder="Enter Torn API key"/>
+        <button class="btn" id="toggleKey" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
+      </span>
+      <button class="btn" id="applyKey">Apply</button>
+      <span class="note">Saved locally to this browser only.</span>
+    </div>
+
+    <div class="card panel" id="prettyPanel">
+      <h2>Formatted Panel</h2>
+      <div class="pad">
+        <div id="status" class="note">Loading…</div>
+        <div class="pretty-grid" id="prettyGrid" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="card panel" id="membersPanel">
+      <h2>Members</h2>
+      <div class="pad">
+        <div id="mStatus" class="note">Loading…</div>
+        <div class="table-wrap">
+          <table id="membersTable" aria-label="Faction members">
+            <thead><tr><th>Name</th><th>User ID</th><th>Level</th><th>Days in Faction</th><th>Rank</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">Background login uses Netlify Identity (with a local fallback for dev). No keys are saved on a server.</p>
+  </div>
 
   <script>
+    // --- Identity & gate flow ---
     const DEFAULT_KEY = ""; // no default for security
     let currentKey = localStorage.getItem('torn:key') || DEFAULT_KEY;
     function setKey(k){ currentKey = (k && k.trim()) || DEFAULT_KEY; localStorage.setItem('torn:key', currentKey); }
     function basicUrl(){ return `https://api.torn.com/v2/faction/basic?key=${encodeURIComponent(currentKey)}`; }
     function membersUrl(){ return `https://api.torn.com/v2/faction/members?striptags=true&key=${encodeURIComponent(currentKey)}`; }
+
+    const titleEl = document.getElementById('title');
+    const tagImg = document.getElementById('tagImg');
+    const grid = document.getElementById('prettyGrid');
+    const statusEl = document.getElementById('status');
+    const mStatus = document.getElementById('mStatus');
+    const membersTable = document.getElementById('membersTable');
+    const apiKeyInput = document.getElementById('apiKey');
+    const applyKeyBtn = document.getElementById('applyKey');
+    const toggleKeyBtn = document.getElementById('toggleKey');
+    const containerEl = document.querySelector('.container');
+    const gateEl = document.getElementById('gate');
+    const gateKey = document.getElementById('gateKey');
+    const gateToggle = document.getElementById('gateToggle');
+    const gateEnter = document.getElementById('gateEnter');
+    const loadingEl = document.getElementById('loading');
+
+    // Identity / access control elements
+    const accountGate = document.getElementById('accountGate');
+    const idLoginBtn = document.getElementById('idLogin');
+    const idSignupBtn = document.getElementById('idSignup');
+    const idBtns = document.getElementById('idBtns');
+    const codeFallback = document.getElementById('codeFallback');
+    const accessCode = document.getElementById('accessCode');
+    const accessEnter = document.getElementById('accessEnter');
+    const userBar = document.getElementById('userBar');
+    const userEmail = document.getElementById('userEmail');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    function showLoading(on){ if(loadingEl) loadingEl.classList.toggle('hidden', !on); }
+    function showGate(on){ if(gateEl) gateEl.classList.toggle('hidden', !on); }
+    function showAccountGate(on){ accountGate?.classList.toggle('hidden', !on); }
+
+    const isObj = (v)=> v && typeof v === 'object';
+
+    function deepFindByPath(root, keys){
+      const visited = new WeakSet();
+      function search(node){
+        if (!isObj(node) || visited.has(node)) return undefined;
+        visited.add(node);
+        if (Object.prototype.hasOwnProperty.call(node, keys[0])){
+          let cur = node[keys[0]];
+          for (let i=1;i<keys.length;i++){
+            if (!isObj(cur) && i < keys.length-1) { cur = undefined; break; }
+            cur = cur?.[keys[i]];
+          }
+          if (cur !== undefined) return cur;
+        }
+        if (Array.isArray(node)){
+          for (const item of node){ const r = search(item); if (r !== undefined) return r; }
+        } else {
+          for (const k in node){ const r = search(node[k]); if (r !== undefined) return r; }
+        }
+        return undefined;
+      }
+      return search(root);
+    }
+
+    function findAny(root, pathList){
+      for (const p of pathList){
+        const keys = p.split('.');
+        const v = deepFindByPath(root, keys);
+        if (v !== undefined && v !== null) return v;
+      }
+      return null;
+    }
+
+    const fnum = (v)=> (v==null || v!==v) ? '—' : (typeof v==='number' || !isNaN(Number(v))) ? Number(v).toLocaleString() : String(v);
+    const fraw = (v)=> (v==null || v!==v) ? '—' : String(v).replace(/,/g,'');
+
+    function countMembers(m){
+      if (m==null) return null;
+      if (typeof m==='number') return m;
+      if (Array.isArray(m)) return m.length;
+      if (typeof m==='object') return Object.keys(m).length;
+      return null;
+    }
+
+    function renderCards(fields){
+      grid.innerHTML = Object.entries(fields).map(([label,val]) => `
+        <div class="stat">
+          <div class="label">${label}</div>
+          <div class="value">${val ?? '—'}</div>
+        </div>
+      `).join('');
+    }
+
+    function updateHeader(name, tagImgUrl){
+      titleEl.textContent = name || 'Faction Overview';
+      if (tagImgUrl){ tagImg.src = tagImgUrl; tagImg.style.display = 'block'; }
+      else { tagImg.style.display = 'none'; }
+      document.title = titleEl.textContent;
+    }
+
+    async function fetchJSON(url){
+      try{
+        const res = await fetch(url, {cache:'no-store'});
+        const text = await res.text();
+        try { return JSON.parse(text); } catch { throw new Error(`Non-JSON from origin (HTTP ${res.status}).`); }
+      }catch(e){
+        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const res2 = await fetch(proxy, {cache:'no-store'});
+        const text2 = await res2.text();
+        return JSON.parse(text2);
+      }
+    }
+
+    function showApiStatus(data){
+      const s = data?.status || data?.Status || null;
+      if (!s) return;
+      const bits = [];
+      if (s.code!=null) bits.push(`code ${s.code}`);
+      if (s.error) bits.push(String(s.error));
+      if (s.state) bits.push(String(s.state));
+      if (bits.length) statusEl.textContent = `API status: ${bits.join(' — ')}`;
+    }
+
+    async function main(){
+      statusEl.textContent = 'Loading…';
+      try{
+        let data = await fetchJSON(basicUrl());
+        const root = isObj(data)
+          ? (data.faction || data.data || data.result || data.response || data)
+          : {};
+
+        const id = findAny(root, ['id','faction_id']);
+        const name = findAny(root, ['name','faction.name']);
+        const tag = findAny(root, ['tag']);
+        const tag_image = findAny(root, ['tag_image','tagImage','image.tag','images.tag']);
+        const leader_id = findAny(root, ['leader_id','leader.id']);
+        const respect = findAny(root, ['respect_total','respect','stats.respect','faction.respect_total']);
+        const days_old = findAny(root, ['days_old','age_days','stats.days_old']);
+        const capacity = findAny(root, ['capacity.max','member_capacity','capacity']);
+        const membersRaw = findAny(root, ['members_count','member_count','members','member_list','members.all']);
+        const members = countMembers(membersRaw);
+        const rankName = findAny(root, ['rankObject.name','rank.name','rank_group.name']);
+        const wins = findAny(root, ['ranked_wars.wins','rankedWars.wins','wins']);
+        const best_chain = findAny(root, ['best_chain','chains.best','bestChain']);
+
+        updateHeader(name, tag_image);
+
+        const hasCore = (id!=null && id!=='') || (name && name!=='') || (leader_id!=null && leader_id!=='');
+        if (!hasCore) {
+          statusEl.textContent = 'Invalid API key.';
+          grid.innerHTML = '';
+          return;
+        }
+
+        const fields = {
+          'Faction ID': fraw(id),
+          'Faction': name || '—',
+          'Faction Tag': tag || '—',
+          'Leader': fraw(leader_id),
+          'Total Respect': fnum(respect),
+          'Age (days)': fnum(days_old),
+          'Max number of players': fnum(capacity),
+          'Member Count': fnum(members),
+          'Faction Rank': rankName || '—',
+          'Ranked War Wins': fnum(wins),
+          'Highest Chain Achieved': fnum(best_chain)
+        };
+        renderCards(fields);
+
+        showApiStatus(data);
+        statusEl.classList.add('hidden');
+      }catch(err){
+        statusEl.textContent = 'Failed to load data. Check the API URL, permissions, and CORS.';
+      }
+    }
+
+    function findMembersNode(root){
+      const queue = [root];
+      const seen = new WeakSet();
+      while(queue.length){
+        const node = queue.shift();
+        if (!isObj(node) || seen.has(node)) continue;
+        seen.add(node);
+        if (Object.prototype.hasOwnProperty.call(node, 'members')){
+          const v = node['members'];
+          if (isObj(v) || Array.isArray(v)) return v;
+        }
+        if (Object.prototype.hasOwnProperty.call(node, 'member_list')){
+          const v = node['member_list'];
+          if (isObj(v) || Array.isArray(v)) return v;
+        }
+        if (Array.isArray(node)) queue.push(...node);
+        else for (const k in node) queue.push(node[k]);
+      }
+      return null;
+    }
+
+    function extractMembers(data){
+      const mnode = findMembersNode(data) || data;
+      let arr = [];
+      if (Array.isArray(mnode)){
+        arr = mnode;
+      } else if (mnode && typeof mnode === 'object'){
+        arr = Object.entries(mnode).map(([k,v])=> ({...v, __key:k}));
+      }
+      const rows = arr.map(it=>{
+        const name = it?.name ?? it?.playername ?? it?.username ?? it?.user_name ?? it?.nickname ?? it?.Name ?? it?.user ?? '';
+        const id = it?.user_id ?? it?.player_id ?? it?.id ?? it?.userid ?? it?.uid ?? it?.__key ?? '';
+        const level = it?.level ?? it?.lvl ?? it?.Level ?? it?.user_level ?? it?.stats?.level ?? '';
+        const days = it?.days_in_faction ?? it?.daysInFaction ?? it?.days ?? it?.tenure_days ?? it?.faction_days ?? '';
+        const position = it?.position ?? it?.role ?? it?.rank ?? it?.title ?? '';
+        return { name: String(name||'').trim(), id: String(id||'').trim(), level, days, rank: String(position||'').trim() };
+      }).filter(r=> r.name || r.id || r.level || r.days || r.rank);
+      rows.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
+      return rows;
+    }
+
+    function renderMembersTable(rows){
+      const table = membersTable;
+      if (!table) return;
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      ['Name','User ID','Level','Days in Faction','Rank'].forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); });
+      thead.appendChild(trh);
+
+      const tbody = document.createElement('tbody');
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td'); tdName.textContent = r.name || '—';
+        const tdId = document.createElement('td'); tdId.textContent = fraw(r.id);
+        const tdLvl = document.createElement('td'); tdLvl.textContent = r.level === '' || r.level == null ? '—' : fnum(r.level);
+        const tdDays = document.createElement('td'); tdDays.textContent = r.days === '' || r.days == null ? '—' : fnum(r.days);
+        const tdRank = document.createElement('td'); tdRank.textContent = r.rank || '—';
+        tr.appendChild(tdName); tr.appendChild(tdId); tr.appendChild(tdLvl); tr.appendChild(tdDays); tr.appendChild(tdRank);
+        tbody.appendChild(tr);
+      });
+      table.innerHTML = '';
+      table.appendChild(thead);
+      table.appendChild(tbody);
+    }
+
+    async function loadMembers(){
+      if (!mStatus) return;
+      mStatus.textContent = 'Loading…';
+      try{
+        const data = await fetchJSON(membersUrl());
+        const rows = extractMembers(data);
+        if (!rows.length){
+          mStatus.textContent = 'Invalid API key.';
+          return;
+        }
+        renderMembersTable(rows);
+        mStatus.classList.add('hidden');
+      }catch(e){
+        mStatus.textContent = 'Failed to load members.';
+      }
+    }
+
+    function showLoadingOverlay(on){ showLoading(on); }
+    async function runApp(){
+      showLoadingOverlay(true);
+      statusEl && (statusEl.textContent = 'Loading…', statusEl.classList.remove('hidden'));
+      mStatus && (mStatus.textContent = 'Loading…', mStatus.classList.remove('hidden'));
+      showGate(false);
+      containerEl && containerEl.classList.remove('hidden');
+      const forcedDelay = 5000 + Math.random() * 5000; // 5–10s
+      await Promise.all([
+        main(),
+        loadMembers(),
+        new Promise(res => setTimeout(res, forcedDelay))
+      ]);
+      showLoadingOverlay(false);
+    }
+
+    function ensureIdentity(){
+      return new Promise((resolve)=>{
+        if (typeof netlifyIdentity !== 'undefined'){
+          netlifyIdentity.on('init', (user)=>{
+            if (user){ setUserUI(user); showAccountGate(false); resolve(user); }
+            else { showAccountGate(true); }
+          });
+          netlifyIdentity.on('login', (user)=>{ setUserUI(user); netlifyIdentity.close(); showAccountGate(false); resolve(user); });
+          netlifyIdentity.on('logout', ()=>{ setUserUI(null); showAccountGate(true); containerEl?.classList.add('hidden'); showGate(false); });
+          netlifyIdentity.init();
+          idLoginBtn?.addEventListener('click', ()=> netlifyIdentity.open('login'));
+          idSignupBtn?.addEventListener('click', ()=> netlifyIdentity.open('signup'));
+          logoutBtn?.addEventListener('click', ()=> netlifyIdentity.logout());
+        } else {
+          // fallback: simple access code for local/demo use
+          document.getElementById('gateNote')?.insertAdjacentText('beforeend', ' Identity not configured. Using access code fallback.');
+          idBtns?.classList.add('hidden');
+          codeFallback?.classList.remove('hidden');
+          accessEnter?.addEventListener('click', ()=>{
+            const ok = ['demo','test','letmein'].includes((accessCode?.value||'').trim());
+            if (ok){ localStorage.setItem('torn:access','1'); setUserUI({email:'access@local'}); showAccountGate(false); resolve({email:'access@local'}); }
+            else { if (accessCode){ accessCode.value=''; accessCode.placeholder='Invalid code'; } }
+          });
+        }
+      });
+    }
+
+    function setUserUI(user){
+      if (userBar) userBar.style.display = user ? 'block' : 'none';
+      if (userEmail) userEmail.textContent = user?.email || 'access@local';
+    }
+
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if (apiKeyInput) apiKeyInput.value = currentKey;
+      if (gateKey) gateKey.value = currentKey;
+
+      if (applyKeyBtn){
+        applyKeyBtn.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
+        apiKeyInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
+      }
+
+      if (toggleKeyBtn){
+        toggleKeyBtn.addEventListener('click', ()=>{
+          const hidden = apiKeyInput.type === 'password';
+          apiKeyInput.type = hidden ? 'text' : 'password';
+          toggleKeyBtn.textContent = hidden ? 'Hide' : 'Show';
+          toggleKeyBtn.setAttribute('aria-pressed', String(hidden));
+        });
+      }
+
+      if (gateToggle){
+        gateToggle.addEventListener('click', ()=>{
+          const hidden = gateKey.type === 'password';
+          gateKey.type = hidden ? 'text' : 'password';
+          gateToggle.textContent = hidden ? 'Hide' : 'Show';
+          gateToggle.setAttribute('aria-pressed', String(hidden));
+        });
+      }
+
+      if (gateEnter){
+        gateEnter.addEventListener('click', ()=>{ setKey(gateKey.value); runApp(); }); }
+      if (gateKey){ gateKey.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ gateEnter.click(); }}); }
+
+      // Start on Account Login; once signed-in, show API key gate
+      ensureIdentity().then(()=>{ showGate(true); });
+    });
   </script>
 </body>
 </html>
-
-<!--
-Netlify Deploy Summary Fix:
-- No redirect rules processed: add a _redirects file if you need SPA-style routing.
-- No header rules processed: add a _headers file if you want custom headers.
-- No functions deployed: add serverless functions in /netlify/functions if needed.
-- No edge functions deployed: add edge functions if required.
-
-Your site still works fine without these; they're just optional features.
--->
