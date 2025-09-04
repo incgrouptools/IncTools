@@ -6,10 +6,7 @@
   <title>Faction Overview</title>
   <meta name="robots" content="noindex">
   <style>
-    :root{
-      --bg:#0b1020; --panel:#111731; --muted:#8a93ad; --text:#e7ecff; --accent:#7aa2ff;
-      --border:#1f2747; --chip:#1b2347; --good:#3ddc97; --warn:#ffcf5a; --bad:#ff6b6b;
-    }
+    :root{ --bg:#0b1020; --panel:#111731; --muted:#8a93ad; --text:#e7ecff; --accent:#7aa2ff; --border:#1f2747; --good:#3ddc97; --warn:#ffcf5a; --bad:#ff6b6b; }
     *{box-sizing:border-box}
     body{margin:0;min-height:100dvh;position:relative;background:linear-gradient(120deg,#0a0f20,#0e1430);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
     .container{max-width:900px;margin:28px auto;padding:0 16px}
@@ -51,6 +48,9 @@
     .loading .spinner{width:64px;height:64px;border-radius:50%;background:conic-gradient(from 0deg, var(--accent), transparent 60%);-webkit-mask:radial-gradient(closest-side, transparent 68%, black 69%);mask:radial-gradient(closest-side, transparent 68%, black 69%);animation:spin 1s linear infinite}
     .loading .loadtext{margin-top:12px;font-size:13px;color:var(--muted);text-align:center}
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Ensure Netlify Identity modal sits ABOVE our overlays */
+    #netlify-identity-widget, .netlify-identity-modal, .netlify-identity-overlay, .netlify-identity-bg, .netlify-identity-button { z-index: 2147483000 !important; position: fixed !important; }
 
     /* Animated aurora background behind everything */
     body::before{content:"";position:fixed;inset:-40% -40%;background:
@@ -422,31 +422,28 @@
       showLoadingOverlay(false);
     }
 
-    function ensureIdentity(){
-      return new Promise((resolve)=>{
-        if (typeof netlifyIdentity !== 'undefined'){
-          netlifyIdentity.on('init', (user)=>{
-            if (user){ setUserUI(user); showAccountGate(false); resolve(user); }
-            else { showAccountGate(true); }
-          });
-          netlifyIdentity.on('login', (user)=>{ setUserUI(user); netlifyIdentity.close(); showAccountGate(false); resolve(user); });
-          netlifyIdentity.on('logout', ()=>{ setUserUI(null); showAccountGate(true); containerEl?.classList.add('hidden'); showGate(false); });
-          netlifyIdentity.init();
-          idLoginBtn?.addEventListener('click', ()=> netlifyIdentity.open('login'));
-          idSignupBtn?.addEventListener('click', ()=> netlifyIdentity.open('signup'));
-          logoutBtn?.addEventListener('click', ()=> netlifyIdentity.logout());
-        } else {
-          // fallback: simple access code for local/demo use
-          document.getElementById('gateNote')?.insertAdjacentText('beforeend', ' Identity not configured. Using access code fallback.');
-          idBtns?.classList.add('hidden');
-          codeFallback?.classList.remove('hidden');
-          accessEnter?.addEventListener('click', ()=>{
-            const ok = ['demo','test','letmein'].includes((accessCode?.value||'').trim());
-            if (ok){ localStorage.setItem('torn:access','1'); setUserUI({email:'access@local'}); showAccountGate(false); resolve({email:'access@local'}); }
-            else { if (accessCode){ accessCode.value=''; accessCode.placeholder='Invalid code'; } }
-          });
-        }
+    // Netlify Identity wiring
+    function enableIdentity(){
+      if (typeof netlifyIdentity === 'undefined') return false;
+      // Open widget and temporarily hide account gate so widget isn't visually "behind" it
+      const openAndHideGate = (view)=>{
+        showAccountGate(false);
+        netlifyIdentity.open(view);
+      };
+      netlifyIdentity.on('init', (user)=>{
+        if (user){ setUserUI(user); showAccountGate(false); }
+        else { showAccountGate(true); }
       });
+      netlifyIdentity.on('login', (user)=>{ setUserUI(user); netlifyIdentity.close(); showAccountGate(false); showGate(true); });
+      netlifyIdentity.on('logout', ()=>{ setUserUI(null); showAccountGate(true); containerEl?.classList.add('hidden'); showGate(false); });
+      netlifyIdentity.on('close', ()=>{ if (!netlifyIdentity.currentUser()) showAccountGate(true); });
+      netlifyIdentity.init();
+
+      // Buttons
+      document.getElementById('idLogin')?.addEventListener('click', ()=> openAndHideGate('login'));
+      document.getElementById('idSignup')?.addEventListener('click', ()=> openAndHideGate('signup'));
+      document.getElementById('logoutBtn')?.addEventListener('click', ()=> netlifyIdentity.logout());
+      return true;
     }
 
     function setUserUI(user){
@@ -454,7 +451,26 @@
       if (userEmail) userEmail.textContent = user?.email || 'access@local';
     }
 
+    // Fallback when Identity isn't configured
+    function enableAccessCodeFallback(){
+      document.getElementById('gateNote')?.insertAdjacentText('beforeend', ' Identity not configured. Using access code fallback.');
+      document.getElementById('idBtns')?.classList.add('hidden');
+      document.getElementById('codeFallback')?.classList.remove('hidden');
+      document.getElementById('accessEnter')?.addEventListener('click', ()=>{
+        const val = (document.getElementById('accessCode')?.value||'').trim();
+        const ok = ['demo','test','letmein'].includes(val);
+        if (ok){ localStorage.setItem('torn:access','1'); setUserUI({email:'access@local'}); showAccountGate(false); showGate(true); }
+        else {
+          const ac = document.getElementById('accessCode'); if (ac){ ac.value=''; ac.placeholder='Invalid code'; }
+        }
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', ()=>{
+      // Identity first
+      if (!enableIdentity()) enableAccessCodeFallback();
+
+      // API key inputs
       if (apiKeyInput) apiKeyInput.value = currentKey;
       if (gateKey) gateKey.value = currentKey;
 
@@ -485,8 +501,8 @@
         gateEnter.addEventListener('click', ()=>{ setKey(gateKey.value); runApp(); }); }
       if (gateKey){ gateKey.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ gateEnter.click(); }}); }
 
-      // Start on Account Login; once signed-in, show API key gate
-      ensureIdentity().then(()=>{ showGate(true); });
+      // Show API key gate after sign-in (or fallback access)
+      // If the user is already signed in (Identity), on('init') will hide accountGate automatically
     });
   </script>
 </body>
