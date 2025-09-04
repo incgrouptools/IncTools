@@ -50,8 +50,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
 
     /* Ensure Netlify Identity modal sits ABOVE our overlays */
-    #netlify-identity-widget, .netlify-identity-modal, .netlify-identity-overlay, .netlify-identity-bg, .netlify-identity-button { z-index: 2147483000 !important; position: fixed !important; }
-
+    
     /* Animated aurora background behind everything */
     body::before{content:"";position:fixed;inset:-40% -40%;background:
       radial-gradient(40% 35% at 20% 30%, rgba(122,162,255,.35), transparent 60%),
@@ -64,22 +63,22 @@
     .loading .spinner,.loading .loadtext{position:relative;z-index:1}
     @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
   </style>
-  <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-</head>
+  </head>
 <body>
   <!-- Account login (Netlify Identity) -->
   <div id="accountGate" class="gate">
     <div class="login">
-      <h2>Account Login</h2>
-      <div id="idBtns" class="row">
-        <button class="btn" id="idLogin" type="button">Sign in</button>
-        <button class="btn" id="idSignup" type="button">Create account</button>
+      <h2>Sign in with Torn</h2>
+      <div class="row" style="margin-bottom:8px">
+        <input id="loginUserId" inputmode="numeric" pattern="[0-9]*" placeholder="Torn User ID" />
       </div>
-      <div id="codeFallback" class="row hidden">
-        <input id="accessCode" type="password" placeholder="Access code"/>
-        <button class="btn" id="accessEnter" type="button">Enter</button>
+      <div class="row">
+        <input id="loginApiKey" type="password" placeholder="Limited API key" />
+        <button class="btn" id="loginToggle" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
+        <button class="btn" id="loginBtn" type="button">Sign in</button>
       </div>
-      <p class="note" id="gateNote">Use Netlify Identity to sign in.</p>
+      <p class="note" id="loginNote">We verify your user by calling Torn's user/basic with your key and matching the ID. Your key stays in this browser.</p>
+      <p class="note hidden" id="loginErr" style="color:#ff9b9b">Invalid ID or API key. Please try again.</p>
     </div>
   </div>
 
@@ -148,13 +147,18 @@
   </div>
 
   <script>
-    // --- Identity & gate flow ---
+    // --- URLs & state ---
     const DEFAULT_KEY = ""; // no default for security
     let currentKey = localStorage.getItem('torn:key') || DEFAULT_KEY;
+
     function setKey(k){ currentKey = (k && k.trim()) || DEFAULT_KEY; localStorage.setItem('torn:key', currentKey); }
+    const cleanId = (s)=> String(s||'').replace(/,/g,'').trim();
+
     function basicUrl(){ return `https://api.torn.com/v2/faction/basic?key=${encodeURIComponent(currentKey)}`; }
     function membersUrl(){ return `https://api.torn.com/v2/faction/members?striptags=true&key=${encodeURIComponent(currentKey)}`; }
+    function userUrl(k){ return `https://api.torn.com/v2/user/basic?key=${encodeURIComponent(k)}`; }
 
+    // --- Elements ---
     const titleEl = document.getElementById('title');
     const tagImg = document.getElementById('tagImg');
     const grid = document.getElementById('prettyGrid');
@@ -171,24 +175,39 @@
     const gateEnter = document.getElementById('gateEnter');
     const loadingEl = document.getElementById('loading');
 
-    // Identity / access control elements
+    // Login elements
+    const loginUserId = document.getElementById('loginUserId');
+    const loginApiKey = document.getElementById('loginApiKey');
+    const loginToggle = document.getElementById('loginToggle');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginErr = document.getElementById('loginErr');
     const accountGate = document.getElementById('accountGate');
-    const idLoginBtn = document.getElementById('idLogin');
-    const idSignupBtn = document.getElementById('idSignup');
-    const idBtns = document.getElementById('idBtns');
-    const codeFallback = document.getElementById('codeFallback');
-    const accessCode = document.getElementById('accessCode');
-    const accessEnter = document.getElementById('accessEnter');
+
     const userBar = document.getElementById('userBar');
     const userEmail = document.getElementById('userEmail');
     const logoutBtn = document.getElementById('logoutBtn');
 
+    // --- UI helpers ---
     function showLoading(on){ if(loadingEl) loadingEl.classList.toggle('hidden', !on); }
     function showGate(on){ if(gateEl) gateEl.classList.toggle('hidden', !on); }
     function showAccountGate(on){ accountGate?.classList.toggle('hidden', !on); }
 
-    const isObj = (v)=> v && typeof v === 'object';
+    // --- Generic JSON fetch with CORS fallback ---
+    async function fetchJSON(url){
+      try{
+        const res = await fetch(url, {cache:'no-store'});
+        const text = await res.text();
+        try { return JSON.parse(text); } catch { throw new Error(`Non-JSON from origin (HTTP ${res.status}).`); }
+      }catch(e){
+        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const res2 = await fetch(proxy, {cache:'no-store'});
+        const text2 = await res2.text();
+        return JSON.parse(text2);
+      }
+    }
 
+    // --- Data helpers ---
+    const isObj = (v)=> v && typeof v === 'object';
     function deepFindByPath(root, keys){
       const visited = new WeakSet();
       function search(node){
@@ -211,7 +230,6 @@
       }
       return search(root);
     }
-
     function findAny(root, pathList){
       for (const p of pathList){
         const keys = p.split('.');
@@ -220,7 +238,6 @@
       }
       return null;
     }
-
     const fnum = (v)=> (v==null || v!==v) ? '—' : (typeof v==='number' || !isNaN(Number(v))) ? Number(v).toLocaleString() : String(v);
     const fraw = (v)=> (v==null || v!==v) ? '—' : String(v).replace(/,/g,'');
 
@@ -248,19 +265,6 @@
       document.title = titleEl.textContent;
     }
 
-    async function fetchJSON(url){
-      try{
-        const res = await fetch(url, {cache:'no-store'});
-        const text = await res.text();
-        try { return JSON.parse(text); } catch { throw new Error(`Non-JSON from origin (HTTP ${res.status}).`); }
-      }catch(e){
-        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-        const res2 = await fetch(proxy, {cache:'no-store'});
-        const text2 = await res2.text();
-        return JSON.parse(text2);
-      }
-    }
-
     function showApiStatus(data){
       const s = data?.status || data?.Status || null;
       if (!s) return;
@@ -271,6 +275,7 @@
       if (bits.length) statusEl.textContent = `API status: ${bits.join(' — ')}`;
     }
 
+    // --- App data loads ---
     async function main(){
       statusEl.textContent = 'Loading…';
       try{
@@ -422,63 +427,56 @@
       showLoadingOverlay(false);
     }
 
-    // Netlify Identity wiring
-    function enableIdentity(){
-      if (typeof netlifyIdentity === 'undefined') return false;
-      // Open widget and temporarily hide account gate so widget isn't visually "behind" it
-      const openAndHideGate = (view)=>{
-        showAccountGate(false);
-        netlifyIdentity.open(view);
-      };
-      netlifyIdentity.on('init', (user)=>{
-        if (user){ setUserUI(user); showAccountGate(false); }
-        else { showAccountGate(true); }
-      });
-      netlifyIdentity.on('login', (user)=>{ setUserUI(user); netlifyIdentity.close(); showAccountGate(false); showGate(true); });
-      netlifyIdentity.on('logout', ()=>{ setUserUI(null); showAccountGate(true); containerEl?.classList.add('hidden'); showGate(false); });
-      netlifyIdentity.on('close', ()=>{ if (!netlifyIdentity.currentUser()) showAccountGate(true); });
-      netlifyIdentity.init();
-
-      // Buttons
-      document.getElementById('idLogin')?.addEventListener('click', ()=> openAndHideGate('login'));
-      document.getElementById('idSignup')?.addEventListener('click', ()=> openAndHideGate('signup'));
-      document.getElementById('logoutBtn')?.addEventListener('click', ()=> netlifyIdentity.logout());
-      return true;
-    }
-
-    function setUserUI(user){
-      if (userBar) userBar.style.display = user ? 'block' : 'none';
-      if (userEmail) userEmail.textContent = user?.email || 'access@local';
-    }
-
-    // Fallback when Identity isn't configured
-    function enableAccessCodeFallback(){
-      document.getElementById('gateNote')?.insertAdjacentText('beforeend', ' Identity not configured. Using access code fallback.');
-      document.getElementById('idBtns')?.classList.add('hidden');
-      document.getElementById('codeFallback')?.classList.remove('hidden');
-      document.getElementById('accessEnter')?.addEventListener('click', ()=>{
-        const val = (document.getElementById('accessCode')?.value||'').trim();
-        const ok = ['demo','test','letmein'].includes(val);
-        if (ok){ localStorage.setItem('torn:access','1'); setUserUI({email:'access@local'}); showAccountGate(false); showGate(true); }
-        else {
-          const ac = document.getElementById('accessCode'); if (ac){ ac.value=''; ac.placeholder='Invalid code'; }
+    // --- Custom auth: Torn user ID + limited API key ---
+    async function signInWithTorn(){
+      const userId = cleanId(loginUserId?.value);
+      const key = (loginApiKey?.value || '').trim();
+      if (!userId || !key){ loginErr?.classList.remove('hidden'); loginErr.textContent='Enter your User ID and limited API key.'; return; }
+      loginErr?.classList.add('hidden');
+      try{
+        const data = await fetchJSON(userUrl(key));
+        const gotId = cleanId(data?.user?.id ?? data?.id ?? data?.player_id ?? data?.playerID ?? '');
+        const name = data?.user?.name ?? data?.name ?? data?.playername ?? '';
+        if (gotId && gotId === userId){
+          // success
+          localStorage.setItem('torn:uid', userId);
+          localStorage.setItem('torn:uname', name || '');
+          setKey(key);
+          if (apiKeyInput) apiKeyInput.value = key;
+          if (userBar) userBar.style.display = 'block';
+          if (userEmail) userEmail.textContent = name ? `${name} (${userId})` : userId;
+          showAccountGate(false);
+          runApp();
+        } else {
+          loginErr?.classList.remove('hidden');
+          loginErr.textContent = 'ID does not match this API key.';
         }
-      });
+      }catch(e){
+        loginErr?.classList.remove('hidden');
+        loginErr.textContent = 'Could not validate with Torn. Check your key.';
+      }
     }
 
+    // --- Boot ---
     document.addEventListener('DOMContentLoaded', ()=>{
-      // Identity first
-      if (!enableIdentity()) enableAccessCodeFallback();
+      // Login gate
+      showAccountGate(true);
+      loginBtn?.addEventListener('click', signInWithTorn);
+      loginUserId?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ signInWithTorn(); }});
+      loginApiKey?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ signInWithTorn(); }});
+      loginToggle?.addEventListener('click', ()=>{
+        const hidden = loginApiKey.type === 'password';
+        loginApiKey.type = hidden ? 'text' : 'password';
+        loginToggle.textContent = hidden ? 'Hide' : 'Show';
+        loginToggle.setAttribute('aria-pressed', String(hidden));
+      });
 
-      // API key inputs
+      // API key controls (still available after sign-in)
       if (apiKeyInput) apiKeyInput.value = currentKey;
-      if (gateKey) gateKey.value = currentKey;
-
       if (applyKeyBtn){
         applyKeyBtn.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
         apiKeyInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
       }
-
       if (toggleKeyBtn){
         toggleKeyBtn.addEventListener('click', ()=>{
           const hidden = apiKeyInput.type === 'password';
@@ -488,21 +486,19 @@
         });
       }
 
-      if (gateToggle){
-        gateToggle.addEventListener('click', ()=>{
-          const hidden = gateKey.type === 'password';
-          gateKey.type = hidden ? 'text' : 'password';
-          gateToggle.textContent = hidden ? 'Hide' : 'Show';
-          gateToggle.setAttribute('aria-pressed', String(hidden));
-        });
-      }
-
-      if (gateEnter){
-        gateEnter.addEventListener('click', ()=>{ setKey(gateKey.value); runApp(); }); }
-      if (gateKey){ gateKey.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ gateEnter.click(); }}); }
-
-      // Show API key gate after sign-in (or fallback access)
-      // If the user is already signed in (Identity), on('init') will hide accountGate automatically
+      // Optional logout just clears local state and shows login again
+      logoutBtn?.addEventListener('click', ()=>{
+        localStorage.removeItem('torn:uid');
+        localStorage.removeItem('torn:uname');
+        setKey('');
+        if (apiKeyInput) apiKeyInput.value = '';
+        if (userBar) userBar.style.display = 'none';
+        showAccountGate(true);
+        grid.innerHTML = '';
+        membersTable.innerHTML = '';
+        statusEl.textContent = '';
+        mStatus.textContent = '';
+      });
     });
   </script>
 </body>
