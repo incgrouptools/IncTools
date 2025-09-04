@@ -10,20 +10,16 @@
     *{box-sizing:border-box}
     body{margin:0;min-height:100dvh;position:relative;background:linear-gradient(120deg,#0a0f20,#0e1430);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
     .container{max-width:900px;margin:28px auto;padding:0 16px}
-
     header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
     #tagImg{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#0b1020;display:none}
     header h1{font-size:20px;margin:0}
-
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.25)}
     .panel h2{margin:0;padding:12px;border-bottom:1px solid var(--border);font-size:14px;color:var(--muted);background:rgba(0,0,0,.12)}
     .pad{padding:14px}
-
     .pretty-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
     .stat{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:12px}
     .label{font-size:12px;color:var(--muted);letter-spacing:.2px}
     .value{font-size:20px;margin-top:2px;word-break:break-word}
-
     .note{margin-top:10px;color:var(--muted);font-size:12px}
     .hidden{display:none!important}
     .table-wrap{border:1px solid var(--border);border-radius:12px;overflow:visible}
@@ -36,8 +32,6 @@
     .btn{appearance:none;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer}
     .btn:hover{border-color:#2a3361}
     .controls .keywrap{display:flex;align-items:center;gap:6px}
-
-    /* Login + loader overlays */
     .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,16,32,.82);backdrop-filter:blur(4px);z-index:1000;overflow:hidden}
     .gate .login{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;width:min(560px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.35)}
     .login h2{margin:0 0 10px;font-size:18px;color:var(--muted)}
@@ -48,10 +42,6 @@
     .loading .spinner{width:64px;height:64px;border-radius:50%;background:conic-gradient(from 0deg, var(--accent), transparent 60%);-webkit-mask:radial-gradient(closest-side, transparent 68%, black 69%);mask:radial-gradient(closest-side, transparent 68%, black 69%);animation:spin 1s linear infinite}
     .loading .loadtext{margin-top:12px;font-size:13px;color:var(--muted);text-align:center}
     @keyframes spin{to{transform:rotate(360deg)}}
-
-    /* Ensure Netlify Identity modal sits ABOVE our overlays */
-    
-    /* Animated aurora background behind everything */
     body::before{content:"";position:fixed;inset:-40% -40%;background:
       radial-gradient(40% 35% at 20% 30%, rgba(122,162,255,.35), transparent 60%),
       radial-gradient(35% 30% at 80% 20%, rgba(61,220,151,.30), transparent 60%),
@@ -63,35 +53,22 @@
     .loading .spinner,.loading .loadtext{position:relative;z-index:1}
     @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
   </style>
-  </head>
+</head>
 <body>
-  <!-- Account login (Netlify Identity) -->
+  <!-- Login gate -->
   <div id="accountGate" class="gate">
     <div class="login">
       <h2>Sign in with Torn</h2>
       <div class="row" style="margin-bottom:8px">
-        <input id="loginUserId" inputmode="numeric" pattern="[0-9]*" placeholder="Torn User ID" />
+        <input id="loginUserId" placeholder="Torn User ID (number or Name [ID])" />
       </div>
       <div class="row">
         <input id="loginApiKey" type="password" placeholder="Limited API key" />
-        <button class="btn" id="loginToggle" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
+        <button class="btn" id="loginToggle" type="button">Show</button>
         <button class="btn" id="loginBtn" type="button">Sign in</button>
       </div>
       <p class="note" id="loginNote">We verify your user by calling Torn's user/basic with your key and matching the ID. Your key stays in this browser.</p>
       <p class="note hidden" id="loginErr" style="color:#ff9b9b">Invalid ID or API key. Please try again.</p>
-    </div>
-  </div>
-
-  <!-- API key gate -->
-  <div id="gate" class="gate hidden">
-    <div class="login">
-      <h2>Enter API Key</h2>
-      <div class="row">
-        <input id="gateKey" type="password" placeholder="Enter Torn API key"/>
-        <button class="btn" id="gateToggle" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
-        <button class="btn" id="gateEnter" type="button">Enter</button>
-      </div>
-      <p class="note">Your key is stored locally only.</p>
     </div>
   </div>
 
@@ -101,7 +78,7 @@
     <div class="loadtext">Decrypting faction intel…</div>
   </div>
 
-  <!-- App container -->
+  <!-- App -->
   <div class="container hidden">
     <header>
       <img id="tagImg" alt="Faction tag" />
@@ -116,7 +93,7 @@
       <label class="label" for="apiKey">API key</label>
       <span class="keywrap">
         <input id="apiKey" type="password" placeholder="Enter Torn API key"/>
-        <button class="btn" id="toggleKey" type="button" aria-pressed="false" aria-label="Show API key">Show</button>
+        <button class="btn" id="toggleKey" type="button">Show</button>
       </span>
       <button class="btn" id="applyKey">Apply</button>
       <span class="note">Saved locally to this browser only.</span>
@@ -143,109 +120,83 @@
       </div>
     </div>
 
-    <p class="note">Background login uses Netlify Identity (with a local fallback for dev). No keys are saved on a server.</p>
+    <p class="note">Keys are never sent to our server; requests go straight to Torn from your browser.</p>
   </div>
 
   <script>
-    // --- URLs & state ---
-    const DEFAULT_KEY = ""; // no default for security
+    // --- State & helpers ---
+    const DEFAULT_KEY = "";
     let currentKey = localStorage.getItem('torn:key') || DEFAULT_KEY;
-
     function setKey(k){ currentKey = (k && k.trim()) || DEFAULT_KEY; localStorage.setItem('torn:key', currentKey); }
-    const cleanId = (s)=> String(s||'').replace(/,/g,'').trim();
+    const cleanId = (s)=>{ if(!s) return ""; const m = String(s).match(/(\d{3,})/); return m?m[1]:String(s).replace(/,/g,'').trim(); };
 
+    // API urls
     function basicUrl(){ return `https://api.torn.com/v2/faction/basic?key=${encodeURIComponent(currentKey)}`; }
     function membersUrl(){ return `https://api.torn.com/v2/faction/members?striptags=true&key=${encodeURIComponent(currentKey)}`; }
     function userUrl(k){ return `https://api.torn.com/v2/user/basic?key=${encodeURIComponent(k)}`; }
 
-    // --- Elements ---
-    const titleEl = document.getElementById('title');
-    const tagImg = document.getElementById('tagImg');
-    const grid = document.getElementById('prettyGrid');
-    const statusEl = document.getElementById('status');
-    const mStatus = document.getElementById('mStatus');
-    const membersTable = document.getElementById('membersTable');
-    const apiKeyInput = document.getElementById('apiKey');
-    const applyKeyBtn = document.getElementById('applyKey');
-    const toggleKeyBtn = document.getElementById('toggleKey');
-    const containerEl = document.querySelector('.container');
-    const gateEl = document.getElementById('gate');
-    const gateKey = document.getElementById('gateKey');
-    const gateToggle = document.getElementById('gateToggle');
-    const gateEnter = document.getElementById('gateEnter');
-    const loadingEl = document.getElementById('loading');
+    // Elements
+    const titleEl=document.getElementById('title');
+    const tagImg=document.getElementById('tagImg');
+    const grid=document.getElementById('prettyGrid');
+    const statusEl=document.getElementById('status');
+    const mStatus=document.getElementById('mStatus');
+    const membersTable=document.getElementById('membersTable');
+    const apiKeyInput=document.getElementById('apiKey');
+    const applyKeyBtn=document.getElementById('applyKey');
+    const toggleKeyBtn=document.getElementById('toggleKey');
+    const containerEl=document.querySelector('.container');
+    const loadingEl=document.getElementById('loading');
 
-    // Login elements
-    const loginUserId = document.getElementById('loginUserId');
-    const loginApiKey = document.getElementById('loginApiKey');
-    const loginToggle = document.getElementById('loginToggle');
-    const loginBtn = document.getElementById('loginBtn');
-    const loginErr = document.getElementById('loginErr');
-    const accountGate = document.getElementById('accountGate');
+    // Login
+    const loginUserId=document.getElementById('loginUserId');
+    const loginApiKey=document.getElementById('loginApiKey');
+    const loginToggle=document.getElementById('loginToggle');
+    const loginBtn=document.getElementById('loginBtn');
+    const loginErr=document.getElementById('loginErr');
+    const accountGate=document.getElementById('accountGate');
 
-    const userBar = document.getElementById('userBar');
-    const userEmail = document.getElementById('userEmail');
-    const logoutBtn = document.getElementById('logoutBtn');
+    const userBar=document.getElementById('userBar');
+    const userEmail=document.getElementById('userEmail');
+    const logoutBtn=document.getElementById('logoutBtn');
 
-    // --- UI helpers ---
-    function showLoading(on){ if(loadingEl) loadingEl.classList.toggle('hidden', !on); }
-    function showGate(on){ if(gateEl) gateEl.classList.toggle('hidden', !on); }
-    function showAccountGate(on){ accountGate?.classList.toggle('hidden', !on); }
-
-    // --- Generic JSON fetch with CORS fallback ---
+    // Fetch (simple; Torn supports CORS)
     async function fetchJSON(url){
-      try{
-        const res = await fetch(url, {cache:'no-store'});
-        const text = await res.text();
-        try { return JSON.parse(text); } catch { throw new Error(`Non-JSON from origin (HTTP ${res.status}).`); }
-      }catch(e){
-        const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-        const res2 = await fetch(proxy, {cache:'no-store'});
-        const text2 = await res2.text();
-        return JSON.parse(text2);
-      }
+      const r = await fetch(url, {cache:'no-store'});
+      const txt = await r.text();
+      try { return JSON.parse(txt); } catch { throw new Error('Non-JSON'); }
     }
 
-    // --- Data helpers ---
-    const isObj = (v)=> v && typeof v === 'object';
+    // Utils to read flexible JSON
+    const isObj=(v)=> v && typeof v==='object';
     function deepFindByPath(root, keys){
-      const visited = new WeakSet();
+      const visited=new WeakSet();
       function search(node){
-        if (!isObj(node) || visited.has(node)) return undefined;
+        if(!isObj(node)||visited.has(node))return undefined;
         visited.add(node);
-        if (Object.prototype.hasOwnProperty.call(node, keys[0])){
-          let cur = node[keys[0]];
-          for (let i=1;i<keys.length;i++){
-            if (!isObj(cur) && i < keys.length-1) { cur = undefined; break; }
-            cur = cur?.[keys[i]];
+        if(Object.prototype.hasOwnProperty.call(node,keys[0])){
+          let cur=node[keys[0]];
+          for(let i=1;i<keys.length;i++){
+            if(!isObj(cur)&&i<keys.length-1){cur=undefined;break;}
+            cur=cur?.[keys[i]];
           }
-          if (cur !== undefined) return cur;
+          if(cur!==undefined) return cur;
         }
-        if (Array.isArray(node)){
-          for (const item of node){ const r = search(item); if (r !== undefined) return r; }
-        } else {
-          for (const k in node){ const r = search(node[k]); if (r !== undefined) return r; }
-        }
+        if(Array.isArray(node)){ for(const item of node){ const r=search(item); if(r!==undefined) return r; } }
+        else { for(const k in node){ const r=search(node[k]); if(r!==undefined) return r; } }
         return undefined;
       }
       return search(root);
     }
-    function findAny(root, pathList){
-      for (const p of pathList){
-        const keys = p.split('.');
-        const v = deepFindByPath(root, keys);
-        if (v !== undefined && v !== null) return v;
-      }
-      return null;
-    }
-    const fnum = (v)=> (v==null || v!==v) ? '—' : (typeof v==='number' || !isNaN(Number(v))) ? Number(v).toLocaleString() : String(v);
-    const fraw = (v)=> (v==null || v!==v) ? '—' : String(v).replace(/,/g,'');
+    function findAny(root,pathList){ for(const p of pathList){ const v=deepFindByPath(root,p.split('.')); if(v!==undefined&&v!==null) return v; } return null; }
+    const fnum=(v)=>(v==null||v!==v)?'—':(typeof v==='number'||!isNaN(Number(v)))?Number(v).toLocaleString():String(v);
+    const fraw=(v)=>(v==null||v!==v)?'—':String(v).replace(/,/g,'');
 
     function countMembers(m){
-      if (m==null) return null;
-      if (typeof m==='number') return m;
-      if (Array.isArray(m)) return m.length;
-      if (typeof m==='object') return Object.keys(m).length;
+      if(m==null) return null;
+      if(typeof m==='number') return m;
+      if(Array.isArray(m)) return m.length;
+      if(typeof m==='object') return Object.keys(m).length;
       return null;
     }
 
@@ -258,50 +209,37 @@
       `).join('');
     }
 
-    function updateHeader(name, tagImgUrl){
+    function updateHeader(name,tagImgUrl){
       titleEl.textContent = name || 'Faction Overview';
-      if (tagImgUrl){ tagImg.src = tagImgUrl; tagImg.style.display = 'block'; }
-      else { tagImg.style.display = 'none'; }
+      if(tagImgUrl){ tagImg.src = tagImgUrl; tagImg.style.display='block'; }
+      else { tagImg.style.display='none'; }
       document.title = titleEl.textContent;
     }
 
-    function showApiStatus(data){
-      const s = data?.status || data?.Status || null;
-      if (!s) return;
-      const bits = [];
-      if (s.code!=null) bits.push(`code ${s.code}`);
-      if (s.error) bits.push(String(s.error));
-      if (s.state) bits.push(String(s.state));
-      if (bits.length) statusEl.textContent = `API status: ${bits.join(' — ')}`;
-    }
-
-    // --- App data loads ---
+    // Faction basic
     async function main(){
-      statusEl.textContent = 'Loading…';
+      statusEl.textContent='Loading…';
       try{
-        let data = await fetchJSON(basicUrl());
-        const root = isObj(data)
-          ? (data.faction || data.data || data.result || data.response || data)
-          : {};
-
-        const id = findAny(root, ['id','faction_id']);
-        const name = findAny(root, ['name','faction.name']);
-        const tag = findAny(root, ['tag']);
-        const tag_image = findAny(root, ['tag_image','tagImage','image.tag','images.tag']);
-        const leader_id = findAny(root, ['leader_id','leader.id']);
-        const respect = findAny(root, ['respect_total','respect','stats.respect','faction.respect_total']);
-        const days_old = findAny(root, ['days_old','age_days','stats.days_old']);
-        const capacity = findAny(root, ['capacity.max','member_capacity','capacity']);
-        const membersRaw = findAny(root, ['members_count','member_count','members','member_list','members.all']);
+        const data = await fetchJSON(basicUrl());
+        const root = isObj(data) ? (data.faction || data.data || data.result || data.response || data) : {};
+        const id = findAny(root,['id','faction_id']);
+        const name = findAny(root,['name','faction.name']);
+        const tag = findAny(root,['tag']);
+        const tag_image = findAny(root,['tag_image','tagImage','image.tag','images.tag']);
+        const leader_id = findAny(root,['leader_id','leader.id']);
+        const respect = findAny(root,['respect_total','respect','stats.respect','faction.respect_total']);
+        const days_old = findAny(root,['days_old','age_days','stats.days_old']);
+        const capacity = findAny(root,['capacity.max','member_capacity','capacity']);
+        const membersRaw = findAny(root,['members_count','member_count','members','member_list','members.all']);
         const members = countMembers(membersRaw);
-        const rankName = findAny(root, ['rankObject.name','rank.name','rank_group.name']);
-        const wins = findAny(root, ['ranked_wars.wins','rankedWars.wins','wins']);
-        const best_chain = findAny(root, ['best_chain','chains.best','bestChain']);
+        const rankName = findAny(root,['rankObject.name','rank.name','rank_group.name']);
+        const wins = findAny(root,['ranked_wars.wins','rankedWars.wins','wins']);
+        const best_chain = findAny(root,['best_chain','chains.best','bestChain']);
 
         updateHeader(name, tag_image);
 
         const hasCore = (id!=null && id!=='') || (name && name!=='') || (leader_id!=null && leader_id!=='');
-        if (!hasCore) {
+        if (!hasCore){
           statusEl.textContent = 'Invalid API key.';
           grid.innerHTML = '';
           return;
@@ -321,179 +259,176 @@
           'Highest Chain Achieved': fnum(best_chain)
         };
         renderCards(fields);
-
-        showApiStatus(data);
         statusEl.classList.add('hidden');
       }catch(err){
-        statusEl.textContent = 'Failed to load data. Check the API URL, permissions, and CORS.';
+        statusEl.textContent = 'Failed to load data.';
       }
     }
 
+    // Members
     function findMembersNode(root){
-      const queue = [root];
-      const seen = new WeakSet();
-      while(queue.length){
-        const node = queue.shift();
-        if (!isObj(node) || seen.has(node)) continue;
-        seen.add(node);
-        if (Object.prototype.hasOwnProperty.call(node, 'members')){
-          const v = node['members'];
-          if (isObj(v) || Array.isArray(v)) return v;
+      const q=[root]; const seen=new WeakSet();
+      while(q.length){
+        const n=q.shift();
+        if(!isObj(n)||seen.has(n)) continue;
+        seen.add(n);
+        if(Object.prototype.hasOwnProperty.call(n,'members')){
+          const v=n['members']; if(isObj(v)||Array.isArray(v)) return v;
         }
-        if (Object.prototype.hasOwnProperty.call(node, 'member_list')){
-          const v = node['member_list'];
-          if (isObj(v) || Array.isArray(v)) return v;
+        if(Object.prototype.hasOwnProperty.call(n,'member_list')){
+          const v=n['member_list']; if(isObj(v)||Array.isArray(v)) return v;
         }
-        if (Array.isArray(node)) queue.push(...node);
-        else for (const k in node) queue.push(node[k]);
+        if(Array.isArray(n)) q.push(...n); else for(const k in n) q.push(n[k]);
       }
       return null;
     }
 
     function extractMembers(data){
       const mnode = findMembersNode(data) || data;
-      let arr = [];
-      if (Array.isArray(mnode)){
-        arr = mnode;
-      } else if (mnode && typeof mnode === 'object'){
-        arr = Object.entries(mnode).map(([k,v])=> ({...v, __key:k}));
-      }
+      let arr=[];
+      if(Array.isArray(mnode)) arr=mnode;
+      else if(mnode && typeof mnode==='object') arr=Object.entries(mnode).map(([k,v])=>({...v,__key:k}));
+
       const rows = arr.map(it=>{
         const name = it?.name ?? it?.playername ?? it?.username ?? it?.user_name ?? it?.nickname ?? it?.Name ?? it?.user ?? '';
-        const id = it?.user_id ?? it?.player_id ?? it?.id ?? it?.userid ?? it?.uid ?? it?.__key ?? '';
-        const level = it?.level ?? it?.lvl ?? it?.Level ?? it?.user_level ?? it?.stats?.level ?? '';
+        const id   = it?.user_id ?? it?.player_id ?? it?.id ?? it?.userid ?? it?.uid ?? it?.__key ?? '';
+        const level= it?.level ?? it?.lvl ?? it?.Level ?? it?.user_level ?? it?.stats?.level ?? '';
         const days = it?.days_in_faction ?? it?.daysInFaction ?? it?.days ?? it?.tenure_days ?? it?.faction_days ?? '';
         const position = it?.position ?? it?.role ?? it?.rank ?? it?.title ?? '';
-        return { name: String(name||'').trim(), id: String(id||'').trim(), level, days, rank: String(position||'').trim() };
+        return {
+          name: String(name||'').trim(),
+          id:   String(id||'').trim(),
+          level,
+          days,
+          rank: String(position||'').trim()
+        };
       }).filter(r=> r.name || r.id || r.level || r.days || r.rank);
+
       rows.sort((a,b)=> a.name.localeCompare(b.name, undefined, {sensitivity:'base'}));
       return rows;
     }
 
     function renderMembersTable(rows){
       const table = membersTable;
-      if (!table) return;
-      const thead = document.createElement('thead');
-      const trh = document.createElement('tr');
-      ['Name','User ID','Level','Days in Faction','Rank'].forEach(h=>{ const th=document.createElement('th'); th.textContent=h; trh.appendChild(th); });
+      if(!table) return;
+
+      const thead=document.createElement('thead');
+      const trh=document.createElement('tr');
+      ['Name','User ID','Level','Days in Faction','Rank'].forEach(h=>{
+        const th=document.createElement('th'); th.textContent=h; trh.appendChild(th);
+      });
       thead.appendChild(trh);
 
-      const tbody = document.createElement('tbody');
+      const tbody=document.createElement('tbody');
       rows.forEach(r=>{
-        const tr = document.createElement('tr');
-        const tdName = document.createElement('td'); tdName.textContent = r.name || '—';
-        const tdId = document.createElement('td'); tdId.textContent = fraw(r.id);
-        const tdLvl = document.createElement('td'); tdLvl.textContent = r.level === '' || r.level == null ? '—' : fnum(r.level);
-        const tdDays = document.createElement('td'); tdDays.textContent = r.days === '' || r.days == null ? '—' : fnum(r.days);
-        const tdRank = document.createElement('td'); tdRank.textContent = r.rank || '—';
-        tr.appendChild(tdName); tr.appendChild(tdId); tr.appendChild(tdLvl); tr.appendChild(tdDays); tr.appendChild(tdRank);
+        const tr=document.createElement('tr');
+        const tdName=document.createElement('td'); tdName.textContent=r.name||'—';
+        const tdId=document.createElement('td');   tdId.textContent=fraw(r.id);
+        const tdLvl=document.createElement('td');  tdLvl.textContent=(r.level===''||r.level==null)?'—':fnum(r.level);
+        const tdDays=document.createElement('td'); tdDays.textContent=(r.days===''||r.days==null)?'—':fnum(r.days);
+        const tdRank=document.createElement('td'); tdRank.textContent=r.rank||'—';
+        tr.append(tdName, tdId, tdLvl, tdDays, tdRank);
         tbody.appendChild(tr);
       });
-      table.innerHTML = '';
+
+      table.innerHTML='';
       table.appendChild(thead);
       table.appendChild(tbody);
     }
 
     async function loadMembers(){
-      if (!mStatus) return;
-      mStatus.textContent = 'Loading…';
+      if(!mStatus) return;
+      mStatus.textContent='Loading…';
       try{
         const data = await fetchJSON(membersUrl());
         const rows = extractMembers(data);
-        if (!rows.length){
-          mStatus.textContent = 'Invalid API key.';
+        if(!rows.length){
+          mStatus.textContent='Invalid API key.';
           return;
         }
         renderMembersTable(rows);
         mStatus.classList.add('hidden');
       }catch(e){
-        mStatus.textContent = 'Failed to load members.';
+        mStatus.textContent='Failed to load members.';
       }
     }
 
-    function showLoadingOverlay(on){ showLoading(on); }
+    // Loader + app runner (5–10s)
+    function showLoading(on){ loadingEl?.classList.toggle('hidden', !on); }
     async function runApp(){
-      showLoadingOverlay(true);
-      statusEl && (statusEl.textContent = 'Loading…', statusEl.classList.remove('hidden'));
-      mStatus && (mStatus.textContent = 'Loading…', mStatus.classList.remove('hidden'));
-      showGate(false);
+      showLoading(true);
+      statusEl && (statusEl.textContent='Loading…', statusEl.classList.remove('hidden'));
+      mStatus && (mStatus.textContent='Loading…', mStatus.classList.remove('hidden'));
       containerEl && containerEl.classList.remove('hidden');
-      const forcedDelay = 5000 + Math.random() * 5000; // 5–10s
+
+      const forcedDelay = 5000 + Math.random()*5000; // 5–10s
       await Promise.all([
         main(),
         loadMembers(),
-        new Promise(res => setTimeout(res, forcedDelay))
+        new Promise(res=>setTimeout(res, forcedDelay))
       ]);
-      showLoadingOverlay(false);
+      showLoading(false);
     }
 
-    // --- Custom auth: Torn user ID + limited API key ---
+    // Custom auth (User ID + limited API key)
     async function signInWithTorn(){
       const userId = cleanId(loginUserId?.value);
       const key = (loginApiKey?.value || '').trim();
-      if (!userId || !key){ loginErr?.classList.remove('hidden'); loginErr.textContent='Enter your User ID and limited API key.'; return; }
+      if(!userId || !key){
+        loginErr?.classList.remove('hidden');
+        loginErr.textContent='Enter your User ID and API key.';
+        return;
+      }
       loginErr?.classList.add('hidden');
+
       try{
         const data = await fetchJSON(userUrl(key));
         const gotId = cleanId(data?.user?.id ?? data?.id ?? data?.player_id ?? data?.playerID ?? '');
-        const name = data?.user?.name ?? data?.name ?? data?.playername ?? '';
-        if (gotId && gotId === userId){
-          // success
+        const name  = data?.user?.name ?? data?.name ?? data?.playername ?? '';
+        if(gotId && gotId === userId){
           localStorage.setItem('torn:uid', userId);
           localStorage.setItem('torn:uname', name || '');
           setKey(key);
-          if (apiKeyInput) apiKeyInput.value = key;
-          if (userBar) userBar.style.display = 'block';
-          if (userEmail) userEmail.textContent = name ? `${name} (${userId})` : userId;
-          showAccountGate(false);
+          apiKeyInput && (apiKeyInput.value = key);
+          userBar && (userBar.style.display='block');
+          userEmail && (userEmail.textContent = name ? `${name} (${userId})` : userId);
+          document.getElementById('accountGate')?.classList.add('hidden');
           runApp();
-        } else {
+        }else{
           loginErr?.classList.remove('hidden');
-          loginErr.textContent = 'ID does not match this API key.';
+          loginErr.textContent='ID does not match this API key.';
         }
       }catch(e){
         loginErr?.classList.remove('hidden');
-        loginErr.textContent = 'Could not validate with Torn. Check your key.';
+        loginErr.textContent='Could not validate with Torn. Check your key.';
       }
     }
 
-    // --- Boot ---
+    // Boot
     document.addEventListener('DOMContentLoaded', ()=>{
-      // Login gate
-      showAccountGate(true);
+      // Login handlers
       loginBtn?.addEventListener('click', signInWithTorn);
       loginUserId?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ signInWithTorn(); }});
       loginApiKey?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ signInWithTorn(); }});
       loginToggle?.addEventListener('click', ()=>{
-        const hidden = loginApiKey.type === 'password';
-        loginApiKey.type = hidden ? 'text' : 'password';
-        loginToggle.textContent = hidden ? 'Hide' : 'Show';
-        loginToggle.setAttribute('aria-pressed', String(hidden));
+        const hidden = loginApiKey.type==='password';
+        loginApiKey.type = hidden ? 'text':'password';
+        loginToggle.textContent = hidden ? 'Hide':'Show';
       });
 
-      // API key controls (still available after sign-in)
+      // API key controls
       if (apiKeyInput) apiKeyInput.value = currentKey;
-      if (applyKeyBtn){
-        applyKeyBtn.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
-        apiKeyInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
-      }
-      if (toggleKeyBtn){
-        toggleKeyBtn.addEventListener('click', ()=>{
-          const hidden = apiKeyInput.type === 'password';
-          apiKeyInput.type = hidden ? 'text' : 'password';
-          toggleKeyBtn.textContent = hidden ? 'Hide' : 'Show';
-          toggleKeyBtn.setAttribute('aria-pressed', String(hidden));
-        });
-      }
+      applyKeyBtn?.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
+      apiKeyInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
 
-      // Optional logout just clears local state and shows login again
+      // Logout
       logoutBtn?.addEventListener('click', ()=>{
         localStorage.removeItem('torn:uid');
         localStorage.removeItem('torn:uname');
         setKey('');
         if (apiKeyInput) apiKeyInput.value = '';
         if (userBar) userBar.style.display = 'none';
-        showAccountGate(true);
+        document.getElementById('accountGate')?.classList.remove('hidden');
         grid.innerHTML = '';
         membersTable.innerHTML = '';
         statusEl.textContent = '';
