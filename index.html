@@ -167,7 +167,6 @@
         <label class="label" for="apiKey">API Key</label>
         <input id="apiKey" type="password" placeholder="Enter Torn API key" />
         <button class="btn" id="toggleKey" type="button">Show</button>
-        <button class="btn" id="applyKey">Apply</button>
       </div>
       <hr />
       <button class="btn logout-btn" id="logoutBtn" type="button">Logout</button>
@@ -218,7 +217,6 @@
     const mStatus=document.getElementById('mStatus');
     const membersTable=document.getElementById('membersTable');
     const apiKeyInput=document.getElementById('apiKey');
-    const applyKeyBtn=document.getElementById('applyKey');
     const toggleKeyBtn=document.getElementById('toggleKey');
     const containerEl=document.querySelector('.container');
     const loadingEl=document.getElementById('loading');
@@ -496,8 +494,6 @@
 
       // API key controls
       if (apiKeyInput) apiKeyInput.value = currentKey;
-      applyKeyBtn?.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
-      apiKeyInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
 
            // Logout
       logoutBtn?.addEventListener('click', ()=>{
