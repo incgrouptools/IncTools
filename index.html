@@ -35,7 +35,29 @@
     .gate{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,16,32,.82);backdrop-filter:blur(4px);z-index:1000;overflow:hidden}
     .gate .login{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;width:min(560px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.35)}
     .login h2{margin:0 0 10px;font-size:18px;color:var(--muted)}
-    .login .row{display:flex;gap:8px;align-items:center}
+    .login .row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;        /* allow wrapping */
+}
+
+.login .row .btn {
+  flex: 1 0 auto;         /* prevent squishing */
+  min-width: 80px;
+}
+
+/* Mobile-friendly stacking */
+@media (max-width: 480px) {
+  .login .row {
+    flex-direction: column;   /* stack vertically */
+    align-items: stretch;
+  }
+  .login .row input,
+  .login .row .btn {
+    width: 100%;              /* take full width */
+  }
+}
     .login .row input{flex:1;background:#0f1530;color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:10px}
     .login .row .btn{flex:0 0 auto}
     .loading{position:fixed;inset:0;display:grid;place-items:center;background:rgba(11,16,32,.82);backdrop-filter:blur(4px);z-index:999;overflow:hidden}
