@@ -79,6 +79,49 @@
     }
     .loading .spinner,.loading .loadtext{position:relative;z-index:1}
     @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
+ /* Profile dropdown styles */
+.profile-menu {
+  margin-left: auto;
+  position: relative;
+}
+
+.profile-toggle {
+  background: var(--panel);
+  border-radius: 10px;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 110%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  width: 250px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  z-index: 200;
+}
+
+.profile-dropdown.hidden {
+  display: none;
+}
+
+.profile-info {
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.profile-controls {
+  display: grid;
+  gap: 6px;
+}
+
+.logout-btn {
+  width: 100%;
+  margin-top: 8px;
+}
   </style>
 </head>
 <body>
@@ -107,15 +150,30 @@
 
   <!-- App -->
   <div class="container hidden">
+    
     <header>
-      <img id="tagImg" alt="Faction tag" />
-      <h1 id="title">Faction Overview</h1>
-    </header>
+  <img id="tagImg" alt="Faction tag" />
+  <h1 id="title">Faction Overview</h1>
 
-    <div id="userBar" class="note" style="text-align:right; margin:-4px 0 8px 0; display:none;">
-      Signed in as <span id="userEmail"></span> · <button class="btn" id="logoutBtn" type="button">Logout</button>
+  <!-- Profile dropdown -->
+  <div class="profile-menu">
+    <button class="btn profile-toggle" id="profileToggle">Profile ▾</button>
+    <div class="profile-dropdown hidden" id="profileDropdown">
+      <div class="profile-info">
+        Signed in as <span id="userEmail">Guest</span>
+      </div>
+      <hr />
+      <div class="profile-controls">
+        <label class="label" for="apiKey">API Key</label>
+        <input id="apiKey" type="password" placeholder="Enter Torn API key" />
+        <button class="btn" id="toggleKey" type="button">Show</button>
+        <button class="btn" id="applyKey">Apply</button>
+      </div>
+      <hr />
+      <button class="btn logout-btn" id="logoutBtn" type="button">Logout</button>
     </div>
-
+  </div>
+</header>
     <div class="controls">
       <label class="label" for="apiKey">API key</label>
       <span class="keywrap">
@@ -183,7 +241,6 @@
     const loginErr=document.getElementById('loginErr');
     const accountGate=document.getElementById('accountGate');
 
-    const userBar=document.getElementById('userBar');
     const userEmail=document.getElementById('userEmail');
     const logoutBtn=document.getElementById('logoutBtn');
 
@@ -422,7 +479,6 @@
           localStorage.setItem('torn:uname', name || '');
           setKey(key);
           apiKeyInput && (apiKeyInput.value = key);
-          userBar && (userBar.style.display='block');
           userEmail && (userEmail.textContent = name ? `${name} (${userId})` : userId);
           document.getElementById('accountGate')?.classList.add('hidden');
           runApp();
@@ -459,12 +515,27 @@
         localStorage.removeItem('torn:uname');
         setKey('');
         if (apiKeyInput) apiKeyInput.value = '';
-        if (userBar) userBar.style.display = 'none';
         document.getElementById('accountGate')?.classList.remove('hidden');
         grid.innerHTML = '';
         membersTable.innerHTML = '';
         statusEl.textContent = '';
         mStatus.textContent = '';
+
+        // Profile dropdown toggle
+const profileToggle = document.getElementById("profileToggle");
+const profileDropdown = document.getElementById("profileDropdown");
+
+profileToggle?.addEventListener("click", () => {
+  profileDropdown.classList.toggle("hidden");
+});
+
+// Close dropdown if clicking outside
+document.addEventListener("click", (e) => {
+  if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+    profileDropdown.classList.add("hidden");
+  }
+});
+
       });
     });
   </script>
