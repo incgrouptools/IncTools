@@ -22,7 +22,12 @@
     .value{font-size:20px;margin-top:2px;word-break:break-word}
     .note{margin-top:10px;color:var(--muted);font-size:12px}
     .hidden{display:none!important}
-    .table-wrap{border:1px solid var(--border);border-radius:12px;overflow:visible}
+    .table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;   /* allow horizontal scroll on small screens */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+}
     table{width:100%;border-collapse:collapse}
     th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
     th{background:rgba(0,0,0,.12);position:sticky;top:0}
