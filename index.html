@@ -67,7 +67,7 @@
         <button class="btn" id="loginToggle" type="button">Show</button>
         <button class="btn" id="loginBtn" type="button">Sign in</button>
       </div>
-      <p class="note" id="loginNote">We verify your user by calling Torn's user/basic with your key and matching the ID. Your key stays in this browser.</p>
+      <p class="note" id="loginNote">We verify your user by calling Torn's v2\/user with your key and matching the player ID. Your key stays in this browser.</p>
       <p class="note hidden" id="loginErr" style="color:#ff9b9b">Invalid ID or API key. Please try again.</p>
     </div>
   </div>
@@ -133,7 +133,7 @@
     // API urls
     function basicUrl(){ return `https://api.torn.com/v2/faction/basic?key=${encodeURIComponent(currentKey)}`; }
     function membersUrl(){ return `https://api.torn.com/v2/faction/members?striptags=true&key=${encodeURIComponent(currentKey)}`; }
-    function userUrl(k){ return `https://api.torn.com/v2/user/basic?key=${encodeURIComponent(k)}`; }
+    function userUrl(k){ return `https://api.torn.com/v2/user?stat=&key=${encodeURIComponent(k)}`; }
 
     // Elements
     const titleEl=document.getElementById('title');
@@ -383,8 +383,13 @@
 
       try{
         const data = await fetchJSON(userUrl(key));
-        const gotId = cleanId(data?.user?.id ?? data?.id ?? data?.player_id ?? data?.playerID ?? '');
-        const name  = data?.user?.name ?? data?.name ?? data?.playername ?? '';
+        if (data?.error) {
+          loginErr?.classList.remove('hidden');
+          loginErr.textContent = `API error: ${data.error}`;
+          return;
+        }
+        const gotId = cleanId(findAny(data, ['player_id','user.player_id','id','user.id']) || '');
+        const name  = findAny(data, ['name','user.name','playername','user.playername']) || '';
         if(gotId && gotId === userId){
           localStorage.setItem('torn:uid', userId);
           localStorage.setItem('torn:uname', name || '');
