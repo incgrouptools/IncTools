@@ -7,157 +7,150 @@
   <meta name="robots" content="noindex">
   <style>
     :root{ --bg:#0b1020; --panel:#111731; --muted:#8a93ad; --text:#e7ecff; --accent:#7aa2ff; --border:#1f2747; }
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100dvh;position:relative;background:linear-gradient(120deg,#0a0f20,#0e1430);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    .container{max-width:900px;margin:28px auto;padding:0 16px}
-    header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-    header h1{font-size:20px;margin:0}
-    .btn{appearance:none;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:6px 10px;border-radius:10px;cursor:pointer;font-size:13px}
-    .btn:hover{border-color:#2a3361}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;overflow:visible;box-shadow:0 10px 30px rgba(0,0,0,.25);margin-bottom:24px;padding:16px}
-    h2{margin:0 0 12px;font-size:16px;color:var(--muted)}
-    label{display:block;margin-top:10px;font-size:13px;color:var(--muted)}
-    input{width:100%;padding:8px 10px;margin-top:4px;border-radius:10px;border:1px solid var(--border);background:#0f1530;color:var(--text)}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
-    th{background:rgba(0,0,0,.12);color:var(--muted)}
-    td.actions{white-space:nowrap}
-    .note{color:var(--muted);font-size:12px;margin-top:10px}
-    .hidden{display:none!important}
+    body{margin:0;min-height:100dvh;background:linear-gradient(120deg,#0a0f20,#0e1430);color:var(--text);font:14px/1.45 system-ui;}
     body::before{content:"";position:fixed;inset:-40% -40%;background:
       radial-gradient(40% 35% at 20% 30%, rgba(122,162,255,.35), transparent 60%),
       radial-gradient(35% 30% at 80% 20%, rgba(61,220,151,.30), transparent 60%),
       radial-gradient(50% 40% at 50% 80%, rgba(255,107,107,.25), transparent 60%);
       filter: blur(60px) saturate(120%);
       animation: aurora 16s linear infinite;
-      opacity:.9; z-index:-1; pointer-events:none}
-    @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
+      opacity:.9; z-index:-1; pointer-events:none;
+    }
+    @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}
+      50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}
+      100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
+    .container{max-width:900px;margin:28px auto;padding:0 16px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px}
+    .btn{appearance:none;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer}
+    .btn:hover{border-color:#2a3361}
+    input,select{background:#0f1530;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:8px;margin-right:8px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
+    th{background:rgba(0,0,0,.12)}
   </style>
 </head>
 <body>
   <div class="container">
     <header>
       <h1>INC Weapons</h1>
-      <nav style="margin-left:auto;">
-        <a href="index.html" class="btn">Home</a>
-      </nav>
+      <button class="btn" onclick="window.location.href='index.html'">Home</button>
     </header>
 
-    <p id="authWarning" style="color:#ff6b6b; display:none;">You must be logged in to view this page.</p>
+    <div class="card">
+      <h2>Add Weapon</h2>
+      <div>
+        <input id="weaponName" placeholder="Weapon Name" />
+        <input id="damage" type="number" placeholder="Damage" />
+        <input id="accuracy" type="number" placeholder="Accuracy" />
+        <input id="rwBonus" placeholder="RW Bonus" />
+        <input id="effect" type="number" placeholder="Effect %" />
+        <select id="loanedTo">
+          <option value="">Loaned To...</option>
+        </select>
+        <button class="btn" onclick="addWeapon()">Add</button>
+      </div>
+    </div>
 
-    <div id="weaponsPanel" class="card hidden">
-      <h2>Add / Edit Weapon</h2>
-      <form id="weaponForm">
-        <input type="hidden" id="weaponId" />
-        <label for="weaponName">Weapon Name</label>
-        <input id="weaponName" required />
-        <label for="weaponType">Type</label>
-        <input id="weaponType" required />
-        <label for="weaponNotes">Notes</label>
-        <input id="weaponNotes" />
-        <button type="submit" class="btn">Save Weapon</button>
-      </form>
-
+    <div class="card">
       <h2>Stored Weapons</h2>
       <table id="weaponsTable">
         <thead>
-          <tr><th>Name</th><th>Type</th><th>Notes</th><th>Actions</th></tr>
+          <tr>
+            <th>Weapon</th><th>Damage</th><th>Accuracy</th><th>RW Bonus</th><th>Effect %</th><th>Loaned To</th><th>Actions</th>
+          </tr>
         </thead>
         <tbody></tbody>
       </table>
-      <p class="note">Weapons are stored centrally via Netlify Functions, so all users see the same list.</p>
     </div>
   </div>
 
   <script>
-    // Redirect to home if not logged in
-    if (!localStorage.getItem("torn:uid") || !localStorage.getItem("torn:key")) {
-    window.location.href = "index.html";
+    // --- Check login ---
+    const key = localStorage.getItem("torn:key");
+    const uid = localStorage.getItem("torn:uid");
+    if (!key || !uid) {
+      alert("You must log in first!");
+      window.location.href = "index.html";
     }
-    const uid = localStorage.getItem('torn:uid');
-    if (!uid) {
-      document.getElementById('authWarning').style.display = 'block';
-    } else {
-      document.getElementById('weaponsPanel').classList.remove('hidden');
 
-      const tableBody = document.querySelector("#weaponsTable tbody");
-      const form = document.getElementById("weaponForm");
-      const idInput = document.getElementById("weaponId");
-      const nameInput = document.getElementById("weaponName");
-      const typeInput = document.getElementById("weaponType");
-      const notesInput = document.getElementById("weaponNotes");
-
-      async function loadWeapons() {
-        const res = await fetch("/.netlify/functions/weapons");
-        const list = await res.json();
-        renderWeapons(list);
-      }
-
-      function renderWeapons(list) {
-        tableBody.innerHTML = "";
-        list.forEach(w => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${w.name}</td>
-            <td>${w.type}</td>
-            <td>${w.notes}</td>
-            <td class="actions">
-              <button class="btn" onclick="editWeapon(${w.id}, '${w.name}', '${w.type}', '${w.notes || ""}')">Edit</button>
-              <button class="btn" onclick="deleteWeapon(${w.id})">Delete</button>
-            </td>
-          `;
-          tableBody.appendChild(tr);
-        });
-      }
-
-      form.addEventListener("submit", async e => {
-        e.preventDefault();
-        const id = idInput.value;
-        const name = nameInput.value.trim();
-        const type = typeInput.value.trim();
-        const notes = notesInput.value.trim();
-        if (!name || !type) return;
-
-        if (id) {
-          // Update existing
-          await fetch("/.netlify/functions/weapons", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: parseInt(id), name, type, notes })
-          });
-        } else {
-          // Add new
-          await fetch("/.netlify/functions/weapons", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, type, notes })
+    // --- Members dropdown ---
+    async function fetchMembers() {
+      try {
+        const res = await fetch(`https://api.torn.com/v2/faction/members?key=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        const select = document.getElementById("loanedTo");
+        if (data.members) {
+          Object.values(data.members).forEach(m=>{
+            const opt=document.createElement("option");
+            opt.value = m.name;
+            opt.textContent = m.name;
+            select.appendChild(opt);
           });
         }
-
-        form.reset();
-        idInput.value = "";
-        loadWeapons();
-      });
-
-      window.editWeapon = (id, name, type, notes) => {
-        idInput.value = id;
-        nameInput.value = name;
-        typeInput.value = type;
-        notesInput.value = notes;
-      };
-
-      window.deleteWeapon = async (id) => {
-        if (!confirm("Delete this weapon?")) return;
-        await fetch("/.netlify/functions/weapons", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id })
-        });
-        loadWeapons();
-      };
-
-      loadWeapons();
+      } catch(e) {
+        console.error("Failed to load members", e);
+      }
     }
+
+    // --- Weapons table ---
+    let weapons = JSON.parse(localStorage.getItem("weapons:data") || "[]");
+    const tableBody = document.querySelector("#weaponsTable tbody");
+
+    function renderWeapons() {
+      tableBody.innerHTML = "";
+      weapons.forEach((w,i)=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${w.name}</td>
+          <td>${w.damage}</td>
+          <td>${w.accuracy}</td>
+          <td>${w.rwBonus}</td>
+          <td>${w.effect}</td>
+          <td>${w.loaned}</td>
+          <td>
+            <button class="btn" onclick="editWeapon(${i})">Edit</button>
+            <button class="btn" onclick="deleteWeapon(${i})">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    function addWeapon() {
+      const newW = {
+        name: document.getElementById("weaponName").value,
+        damage: document.getElementById("damage").value,
+        accuracy: document.getElementById("accuracy").value,
+        rwBonus: document.getElementById("rwBonus").value,
+        effect: document.getElementById("effect").value,
+        loaned: document.getElementById("loanedTo").value
+      };
+      weapons.push(newW);
+      localStorage.setItem("weapons:data", JSON.stringify(weapons));
+      renderWeapons();
+    }
+
+    function editWeapon(i) {
+      const w = weapons[i];
+      document.getElementById("weaponName").value = w.name;
+      document.getElementById("damage").value = w.damage;
+      document.getElementById("accuracy").value = w.accuracy;
+      document.getElementById("rwBonus").value = w.rwBonus;
+      document.getElementById("effect").value = w.effect;
+      document.getElementById("loanedTo").value = w.loaned;
+      weapons.splice(i,1);
+      renderWeapons();
+    }
+
+    function deleteWeapon(i) {
+      weapons.splice(i,1);
+      localStorage.setItem("weapons:data", JSON.stringify(weapons));
+      renderWeapons();
+    }
+
+    fetchMembers();
+    renderWeapons();
   </script>
 </body>
 </html>
