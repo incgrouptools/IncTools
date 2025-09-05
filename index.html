@@ -499,7 +499,7 @@
       applyKeyBtn?.addEventListener('click', ()=>{ setKey(apiKeyInput.value); runApp(); });
       apiKeyInput?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ applyKeyBtn.click(); }});
 
-      // Logout
+           // Logout
       logoutBtn?.addEventListener('click', ()=>{
         localStorage.removeItem('torn:uid');
         localStorage.removeItem('torn:uname');
@@ -510,8 +510,8 @@
         membersTable.innerHTML = '';
         statusEl.textContent = '';
         mStatus.textContent = '';
-      }):
-      
+      });
+
       // Profile dropdown toggle
       const profileToggle = document.getElementById("profileToggle");
       const profileDropdown = document.getElementById("profileDropdown");
@@ -524,9 +524,10 @@
       document.addEventListener("click", (e) => {
         if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
           profileDropdown.classList.add("hidden");
-  }
-});
-
+        }
+      });
+    });
   </script>
+
 </body>
 </html>
