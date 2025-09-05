@@ -174,16 +174,6 @@
     </div>
   </div>
 </header>
-    <div class="controls">
-      <label class="label" for="apiKey">API key</label>
-      <span class="keywrap">
-        <input id="apiKey" type="password" placeholder="Enter Torn API key"/>
-        <button class="btn" id="toggleKey" type="button">Show</button>
-      </span>
-      <button class="btn" id="applyKey">Apply</button>
-      <span class="note">Saved locally to this browser only.</span>
-    </div>
-
     <div class="card panel" id="prettyPanel">
       <h2>Formatted Panel</h2>
       <div class="pad">
@@ -520,24 +510,23 @@
         membersTable.innerHTML = '';
         statusEl.textContent = '';
         mStatus.textContent = '';
+      }):
+      
+      // Profile dropdown toggle
+      const profileToggle = document.getElementById("profileToggle");
+      const profileDropdown = document.getElementById("profileDropdown");
 
-        // Profile dropdown toggle
-const profileToggle = document.getElementById("profileToggle");
-const profileDropdown = document.getElementById("profileDropdown");
+      profileToggle?.addEventListener("click", () => {
+        profileDropdown.classList.toggle("hidden");
+      });
 
-profileToggle?.addEventListener("click", () => {
-  profileDropdown.classList.toggle("hidden");
-});
-
-// Close dropdown if clicking outside
-document.addEventListener("click", (e) => {
-  if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
-    profileDropdown.classList.add("hidden");
+      // Close dropdown if clicking outside
+      document.addEventListener("click", (e) => {
+        if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+          profileDropdown.classList.add("hidden");
   }
 });
 
-      });
-    });
   </script>
 </body>
 </html>
