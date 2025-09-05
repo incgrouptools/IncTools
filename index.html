@@ -484,6 +484,15 @@
 
     // Boot
     document.addEventListener('DOMContentLoaded', ()=>{
+      document.addEventListener('DOMContentLoaded', ()=>{
+  // ✅ Auto-login if user already has saved data
+  const savedUid = localStorage.getItem("torn:uid");
+  if (savedUid && currentKey) {
+    document.getElementById("accountGate")?.classList.add("hidden");
+    const savedName = localStorage.getItem("torn:uname") || "User";
+    userEmail.textContent = `${savedName} (${savedUid})`;
+    runApp();
+  }
       // Login handlers
       loginBtn?.addEventListener('click', signInWithTorn);
       loginUserId?.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ signInWithTorn(); }});
