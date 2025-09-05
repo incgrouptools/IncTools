@@ -4,7 +4,6 @@ const path = require("path");
 
 const DB_FILE = path.join(__dirname, "weapons.json");
 
-// Ensure weapons.json exists
 function initDB() {
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify([]));
@@ -27,19 +26,48 @@ exports.handler = async (event) => {
     try {
       const body = JSON.parse(event.body);
       const weapons = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-      weapons.push({
+      const newWeapon = {
         id: Date.now(),
         name: body.name,
         type: body.type,
         notes: body.notes,
-      });
+      };
+      weapons.push(newWeapon);
       fs.writeFileSync(DB_FILE, JSON.stringify(weapons, null, 2));
 
       return {
         statusCode: 200,
-        body: JSON.stringify({ success: true }),
+        body: JSON.stringify(newWeapon),
       };
-    } catch (err) {
+    } catch {
+      return { statusCode: 400, body: "Invalid data" };
+    }
+  }
+
+  if (event.httpMethod === "DELETE") {
+    try {
+      const { id } = JSON.parse(event.body);
+      let weapons = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+      weapons = weapons.filter(w => w.id !== id);
+      fs.writeFileSync(DB_FILE, JSON.stringify(weapons, null, 2));
+
+      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+    } catch {
+      return { statusCode: 400, body: "Invalid ID" };
+    }
+  }
+
+  if (event.httpMethod === "PUT") {
+    try {
+      const body = JSON.parse(event.body);
+      let weapons = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
+      weapons = weapons.map(w =>
+        w.id === body.id ? { ...w, name: body.name, type: body.type, notes: body.notes } : w
+      );
+      fs.writeFileSync(DB_FILE, JSON.stringify(weapons, null, 2));
+
+      return { statusCode: 200, body: JSON.stringify({ success: true }) };
+    } catch {
       return { statusCode: 400, body: "Invalid data" };
     }
   }
