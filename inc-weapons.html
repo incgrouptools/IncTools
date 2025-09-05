@@ -70,6 +70,10 @@
   </div>
 
   <script>
+    // Redirect to home if not logged in
+    if (!localStorage.getItem("torn:uid") || !localStorage.getItem("torn:key")) {
+    window.location.href = "index.html";
+    }
     const uid = localStorage.getItem('torn:uid');
     if (!uid) {
       document.getElementById('authWarning').style.display = 'block';
