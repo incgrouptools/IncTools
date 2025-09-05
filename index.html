@@ -155,6 +155,8 @@
   <img id="tagImg" alt="Faction tag" />
   <h1 id="title">Faction Overview</h1>
 
+  <button class="btn" id="weaponsBtn">INC Weapons</button>
+
   <!-- Profile dropdown -->
   <div class="profile-menu">
     <button class="btn profile-toggle" id="profileToggle">Profile ▾</button>
@@ -516,6 +518,16 @@
         profileDropdown.classList.toggle("hidden");
       });
 
+      // Weapons button
+const weaponsBtn = document.getElementById("weaponsBtn");
+weaponsBtn?.addEventListener("click", () => {
+  // Optional: check if logged in first
+  if (!localStorage.getItem("torn:uid")) {
+    alert("Please sign in before accessing INC Weapons.");
+    return;
+  }
+  window.location.href = "inc-weapons.html";
+});
       // Close dropdown if clicking outside
       document.addEventListener("click", (e) => {
         if (!profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
