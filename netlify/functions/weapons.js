@@ -28,9 +28,12 @@ exports.handler = async (event) => {
       const weapons = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
       const newWeapon = {
         id: Date.now(),
-        name: body.name,
-        type: body.type,
-        notes: body.notes,
+        name: body.name,        // Weapon Name
+        damage: body.damage,
+        accuracy: body.accuracy,
+        rwBonus: body.rwBonus,
+        effect: body.effect,
+        loaned: body.loaned,    // who it’s loaned to
       };
       weapons.push(newWeapon);
       fs.writeFileSync(DB_FILE, JSON.stringify(weapons, null, 2));
@@ -62,7 +65,17 @@ exports.handler = async (event) => {
       const body = JSON.parse(event.body);
       let weapons = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
       weapons = weapons.map(w =>
-        w.id === body.id ? { ...w, name: body.name, type: body.type, notes: body.notes } : w
+        w.id === body.id
+          ? {
+              ...w,
+              name: body.name,
+              damage: body.damage,
+              accuracy: body.accuracy,
+              rwBonus: body.rwBonus,
+              effect: body.effect,
+              loaned: body.loaned,
+            }
+          : w
       );
       fs.writeFileSync(DB_FILE, JSON.stringify(weapons, null, 2));
 
