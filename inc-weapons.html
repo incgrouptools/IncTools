@@ -19,12 +19,13 @@
     @keyframes aurora{0%{transform:translate(-10%,-10%) rotate(0deg) scale(1)}
       50%{transform:translate(10%,5%) rotate(180deg) scale(1.05)}
       100%{transform:translate(-10%,-10%) rotate(360deg) scale(1)}}
-    .container{max-width:900px;margin:28px auto;padding:0 16px}
+    .container{max-width:1000px;margin:28px auto;padding:0 16px}
     header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px}
+    h1{margin:0;font-size:22px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:0 6px 18px rgba(0,0,0,.35);}
     .btn{appearance:none;border:1px solid var(--border);background:#0f1530;color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer}
     .btn:hover{border-color:#2a3361}
-    input,select{background:#0f1530;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:8px;margin-right:8px}
+    input,select{background:#0f1530;color:var(--text);border:1px solid var(--border);padding:8px 10px;border-radius:8px;margin:4px;min-width:100px}
     table{width:100%;border-collapse:collapse;margin-top:12px}
     th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left}
     th{background:rgba(0,0,0,.12)}
@@ -48,7 +49,7 @@
         <select id="loanedTo">
           <option value="">Loaned To...</option>
         </select>
-        <button class="btn" onclick="addWeapon()">Add</button>
+        <button class="btn" onclick="saveWeapon()">Save</button>
       </div>
     </div>
 
@@ -57,7 +58,13 @@
       <table id="weaponsTable">
         <thead>
           <tr>
-            <th>Weapon</th><th>Damage</th><th>Accuracy</th><th>RW Bonus</th><th>Effect %</th><th>Loaned To</th><th>Actions</th>
+            <th>Weapon</th>
+            <th>Damage</th>
+            <th>Accuracy</th>
+            <th>RW Bonus</th>
+            <th>Effect %</th>
+            <th>Loaned To</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -66,7 +73,7 @@
   </div>
 
   <script>
-    // --- Check login ---
+    // --- Login check ---
     const key = localStorage.getItem("torn:key");
     const uid = localStorage.getItem("torn:uid");
     if (!key || !uid) {
@@ -74,7 +81,11 @@
       window.location.href = "index.html";
     }
 
-    // --- Members dropdown ---
+    let weapons = [];
+    let editingId = null;
+    const tableBody = document.querySelector("#weaponsTable tbody");
+
+    // --- Load faction members into dropdown ---
     async function fetchMembers() {
       try {
         const res = await fetch(`https://api.torn.com/v2/faction/members?key=${encodeURIComponent(key)}`);
@@ -93,13 +104,71 @@
       }
     }
 
-    // --- Weapons table ---
-    let weapons = JSON.parse(localStorage.getItem("weapons:data") || "[]");
-    const tableBody = document.querySelector("#weaponsTable tbody");
+    // --- Weapons API calls ---
+    async function loadWeapons() {
+      const res = await fetch("/.netlify/functions/weapons");
+      weapons = await res.json();
+      renderWeapons();
+    }
+
+    async function saveWeapon() {
+      const weapon = {
+        id: editingId || Date.now(),
+        name: document.getElementById("weaponName").value,
+        damage: document.getElementById("damage").value,
+        accuracy: document.getElementById("accuracy").value,
+        rwBonus: document.getElementById("rwBonus").value,
+        effect: document.getElementById("effect").value,
+        loaned: document.getElementById("loanedTo").value
+      };
+
+      if (editingId) {
+        await fetch("/.netlify/functions/weapons", {
+          method: "PUT",
+          body: JSON.stringify(weapon),
+        });
+      } else {
+        await fetch("/.netlify/functions/weapons", {
+          method: "POST",
+          body: JSON.stringify(weapon),
+        });
+      }
+
+      clearForm();
+      loadWeapons();
+    }
+
+    async function deleteWeapon(id) {
+      await fetch("/.netlify/functions/weapons", {
+        method: "DELETE",
+        body: JSON.stringify({ id }),
+      });
+      loadWeapons();
+    }
+
+    function editWeapon(w) {
+      editingId = w.id;
+      document.getElementById("weaponName").value = w.name;
+      document.getElementById("damage").value = w.damage;
+      document.getElementById("accuracy").value = w.accuracy;
+      document.getElementById("rwBonus").value = w.rwBonus;
+      document.getElementById("effect").value = w.effect;
+      document.getElementById("loanedTo").value = w.loaned;
+    }
+
+    function clearForm() {
+      editingId = null;
+      document.getElementById("weaponName").value = "";
+      document.getElementById("damage").value = "";
+      document.getElementById("accuracy").value = "";
+      document.getElementById("rwBonus").value = "";
+      document.getElementById("effect").value = "";
+      document.getElementById("loanedTo").value = "";
+    }
 
     function renderWeapons() {
       tableBody.innerHTML = "";
-      weapons.forEach((w,i)=>{
+      weapons.forEach(w=>{
         const tr=document.createElement("tr");
         tr.innerHTML = `
           <td>${w.name}</td>
@@ -109,48 +178,16 @@
           <td>${w.effect}</td>
           <td>${w.loaned}</td>
           <td>
-            <button class="btn" onclick="editWeapon(${i})">Edit</button>
-            <button class="btn" onclick="deleteWeapon(${i})">Delete</button>
+            <button class="btn" onclick='editWeapon(${JSON.stringify(w)})'>Edit</button>
+            <button class="btn" onclick="deleteWeapon(${w.id})">Delete</button>
           </td>
         `;
         tableBody.appendChild(tr);
       });
     }
 
-    function addWeapon() {
-      const newW = {
-        name: document.getElementById("weaponName").value,
-        damage: document.getElementById("damage").value,
-        accuracy: document.getElementById("accuracy").value,
-        rwBonus: document.getElementById("rwBonus").value,
-        effect: document.getElementById("effect").value,
-        loaned: document.getElementById("loanedTo").value
-      };
-      weapons.push(newW);
-      localStorage.setItem("weapons:data", JSON.stringify(weapons));
-      renderWeapons();
-    }
-
-    function editWeapon(i) {
-      const w = weapons[i];
-      document.getElementById("weaponName").value = w.name;
-      document.getElementById("damage").value = w.damage;
-      document.getElementById("accuracy").value = w.accuracy;
-      document.getElementById("rwBonus").value = w.rwBonus;
-      document.getElementById("effect").value = w.effect;
-      document.getElementById("loanedTo").value = w.loaned;
-      weapons.splice(i,1);
-      renderWeapons();
-    }
-
-    function deleteWeapon(i) {
-      weapons.splice(i,1);
-      localStorage.setItem("weapons:data", JSON.stringify(weapons));
-      renderWeapons();
-    }
-
     fetchMembers();
-    renderWeapons();
+    loadWeapons();
   </script>
 </body>
 </html>
