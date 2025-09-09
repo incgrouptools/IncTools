@@ -122,17 +122,12 @@
         loaned: document.getElementById("loanedTo").value
       };
 
-      if (editingId) {
-        await fetch("/.netlify/functions/weapons", {
-          method: "PUT",
-          body: JSON.stringify(weapon),
-        });
-      } else {
-        await fetch("/.netlify/functions/weapons", {
-          method: "POST",
-          body: JSON.stringify(weapon),
-        });
-      }
+      const method = editingId ? "PUT" : "POST";
+      await fetch("/.netlify/functions/weapons", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(weapon),
+      });
 
       clearForm();
       loadWeapons();
@@ -141,6 +136,7 @@
     async function deleteWeapon(id) {
       await fetch("/.netlify/functions/weapons", {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
       loadWeapons();
@@ -167,30 +163,28 @@
     }
 
     function renderWeapons() {
-  tableBody.innerHTML = "";
-  weapons.forEach(w => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${w.name}</td>
-      <td>${w.damage}</td>
-      <td>${w.accuracy}</td>
-      <td>${w.rwBonus}</td>
-      <td>${w.effect}</td>
-      <td>${w.loaned}</td>
-      <td>
-        <button class="btn edit-btn">Edit</button>
-        <button class="btn delete-btn">Delete</button>
-      </td>
-    `;
+      tableBody.innerHTML = "";
+      weapons.forEach(w => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${w.name}</td>
+          <td>${w.damage}</td>
+          <td>${w.accuracy}</td>
+          <td>${w.rwBonus}</td>
+          <td>${w.effect}</td>
+          <td>${w.loaned}</td>
+          <td>
+            <button class="btn edit-btn">Edit</button>
+            <button class="btn delete-btn">Delete</button>
+          </td>
+        `;
 
-    // attach events AFTER row is built
-    tr.querySelector(".edit-btn").addEventListener("click", () => editWeapon(w));
-    tr.querySelector(".delete-btn").addEventListener("click", () => deleteWeapon(w.id));
+        tr.querySelector(".edit-btn").addEventListener("click", () => editWeapon(w));
+        tr.querySelector(".delete-btn").addEventListener("click", () => deleteWeapon(w.id));
 
-    tableBody.appendChild(tr);
-  });
-}
-
+        tableBody.appendChild(tr);
+      });
+    }
 
     fetchMembers();
     loadWeapons();
