@@ -1,9 +1,9 @@
 // netlify/functions/migrate-weapons.js
-import { neon } from "@netlify/neon";
+const { neon } = require("@netlify/neon");
 
-const sql = neon(); // automatically uses NETLIFY_DATABASE_URL
+const sql = neon(); // uses NETLIFY_DATABASE_URL
 
-export async function handler() {
+exports.handler = async () => {
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS weapons (
@@ -23,4 +23,4 @@ export async function handler() {
   } catch (err) {
     return { statusCode: 500, body: "Migration failed: " + err.message };
   }
-}
+};
