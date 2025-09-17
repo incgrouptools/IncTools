@@ -1,7 +1,7 @@
 // netlify/functions/migrate-weapons.js
-import { neon } from "@netlify/neon/serverless";
+import { neon } from '@netlify/neon';
 
-const sql = neon(); // uses NETLIFY_DATABASE_URL
+const sql = neon(); // Uses NETLIFY_DATABASE_URL automatically
 
 export async function handler() {
   try {
